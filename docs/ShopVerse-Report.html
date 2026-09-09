@@ -1,0 +1,527 @@
+<html><head><meta charset="utf-8">
+<title>ShopVerse - Project Report</title>
+<meta name="author" content="ShopVerse Team, Christ University">
+<meta name="subject" content="CIA-3 Project Report - Role-Based E-Commerce Management Platform">
+<style>
+@page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+*{box-sizing:border-box}
+body{font:10.5pt/1.55 "Segoe UI",system-ui,sans-serif;color:#1a1a1a;margin:0}
+h1{font-size:19pt;color:#0f2e1f;margin:0 0 4pt;page-break-after:avoid}
+h2{font-size:14pt;color:#0f2e1f;margin:20pt 0 7pt;padding-bottom:4pt;
+   border-bottom:1.5pt solid #1b4332;page-break-after:avoid}
+h3{font-size:11.5pt;color:#1b4332;margin:14pt 0 5pt;page-break-after:avoid}
+p{margin:0 0 8pt;text-align:justify}
+ul,ol{margin:0 0 8pt;padding-left:16pt}
+li{margin-bottom:3.5pt}
+code{font-family:Consolas,ui-monospace,monospace;font-size:9pt;background:#f1f8f4;
+     padding:1pt 3pt;border-radius:2pt;color:#1b4332}
+pre{background:#1e2430;color:#d5dae3;padding:9pt 11pt;border-radius:5pt;
+    font:8.5pt/1.5 Consolas,monospace;overflow:visible;white-space:pre-wrap;page-break-inside:avoid}
+table{width:100%;border-collapse:collapse;margin:0 0 10pt;font-size:9pt;page-break-inside:avoid}
+th{background:#1b4332;color:#fff;text-align:left;padding:5pt 6pt;font-weight:600}
+td{border:0.5pt solid #e6e6e1;padding:4.5pt 6pt;vertical-align:top}
+tr:nth-child(even) td{background:#faf9f6}
+figure{margin:10pt 0 14pt;page-break-inside:avoid;text-align:center}
+figure img{max-width:100%;max-height:150mm;border:0.5pt solid #e6e6e1;border-radius:4pt}
+figcaption{font-size:8.5pt;color:#5c5c5c;margin-top:5pt;text-align:center;font-style:italic}
+.note{background:#f1f8f4;border-left:3pt solid #1b4332;padding:8pt 11pt;margin:10pt 0;
+      font-size:9.5pt;page-break-inside:avoid}
+.warn{background:#fff4e6;border-left:3pt solid #ed8936;padding:8pt 11pt;margin:10pt 0;font-size:9.5pt}
+.pb{page-break-before:always}
+.cover{height:245mm;display:flex;flex-direction:column;justify-content:center;text-align:center}
+.cover .uni{font-size:13pt;font-weight:600;color:#1b4332;letter-spacing:.4pt}
+.cover .dept{font-size:10.5pt;color:#5c5c5c;margin-top:3pt}
+.cover .rule{width:55mm;height:2.5pt;background:#f0a202;margin:16pt auto}
+.cover .t{font-size:33pt;font-weight:700;color:#0f2e1f;margin:6pt 0 2pt}
+.cover .s{font-size:14pt;color:#2d6a4f;margin-bottom:20pt}
+.cover .meta{font-size:10.5pt;color:#5c5c5c;line-height:1.9}
+.fill{display:inline-block;border-bottom:0.8pt solid #1a1a1a;min-width:62mm}
+.fill.sm{min-width:38mm}
+.blank td{height:9mm}
+.hint{font-size:8pt;color:#8e8e8e;font-style:italic}
+.toc{font-size:10pt}
+.toc td{border:none;padding:3pt 0}
+.toc td:last-child{text-align:right;color:#5c5c5c}
+</style></head><body>
+
+<!-- ═══════════════ PAGE 1 — TEAM DETAILS (required first page) ═══════════════ -->
+<div class="cover">
+  <div class="uni">CHRIST UNIVERSITY</div>
+  <div class="dept">Department of Computer Science &middot; 5th Semester &middot; CIA-3 Project Development</div>
+  <div class="rule"></div>
+  <div class="t">ShopVerse</div>
+  <div class="s">Role-Based E-Commerce Management Platform</div>
+  <div class="meta">
+    Node.js &middot; Express.js &middot; MongoDB &middot; Mongoose &middot; JWT &middot; bcrypt<br>
+    In association with <b>L&amp;T EduTech</b>
+  </div>
+</div>
+
+<h2 style="margin-top:0">Team Details</h2>
+<p class="hint">Complete every field below before submission.</p>
+<table>
+  <tr><th style="width:8%">#</th><th style="width:34%">Name</th><th style="width:24%">Register Number</th><th style="width:22%">Department</th><th style="width:12%">Section</th></tr>
+  <tr class="blank"><td>1</td><td></td><td></td><td></td><td></td></tr>
+  <tr class="blank"><td>2</td><td></td><td></td><td></td><td></td></tr>
+  <tr class="blank"><td>3</td><td></td><td></td><td></td><td></td></tr>
+  <tr class="blank"><td>4</td><td></td><td></td><td></td><td></td></tr>
+</table>
+<p style="margin-top:14pt;line-height:2.4">
+  <b>Course:</b> <span class="fill"></span> &nbsp;&nbsp; <b>Semester:</b> <span class="fill sm">5th</span><br>
+  <b>Guide / Faculty in charge:</b> <span class="fill"></span><br>
+  <b>GitHub repository:</b> <span class="fill" style="min-width:110mm"></span><br>
+  <b>Date of submission:</b> <span class="fill sm"></span>
+</p>
+
+<!-- ═══════════════ TOC ═══════════════ -->
+<div class="pb"></div>
+<h1>Table of Contents</h1>
+<table class="toc">
+  <tr><td>1. Problem Statement</td><td>3</td></tr>
+  <tr><td>2. Objectives</td><td>3</td></tr>
+  <tr><td>3. Technology Stack</td><td>4</td></tr>
+  <tr><td>4. System Architecture</td><td>4</td></tr>
+  <tr><td>5. Database Design</td><td>5</td></tr>
+  <tr><td>6. Modules Implemented</td><td>7</td></tr>
+  <tr><td>7. Security Implementation</td><td>9</td></tr>
+  <tr><td>8. Business Rules</td><td>10</td></tr>
+  <tr><td>9. API Reference</td><td>11</td></tr>
+  <tr><td>10. Code Screenshots</td><td>13</td></tr>
+  <tr><td>11. Output Screenshots</td><td>17</td></tr>
+  <tr><td>12. Testing &amp; Results</td><td>21</td></tr>
+  <tr><td>13. Setup Instructions</td><td>23</td></tr>
+  <tr><td>14. Known Limitations</td><td>24</td></tr>
+  <tr><td>15. Conclusion</td><td>24</td></tr>
+</table>
+
+<!-- ═══════════════ 1-2 ═══════════════ -->
+<div class="pb"></div>
+<h1>ShopVerse — Project Report</h1>
+
+<h2>1. Problem Statement</h2>
+<p>An online marketplace must serve three different kinds of user simultaneously — customers who browse and buy, sellers who list products and fulfil orders, and administrators who oversee the platform. Each role needs a different view of the same underlying data, and none may read or modify what belongs to another.</p>
+<p>Systems of this kind fail in predictable ways. Stock oversells when two customers order the last unit at the same moment. Any authenticated user can call any route because role checks were never added. Order status becomes an editable text field, so invalid jumps such as <i>Delivered</i> back to <i>Shipped</i> pass unnoticed. Coupons are validated in the browser and trusted by the server. A later price change silently rewrites the totals of orders already placed. A single unhandled promise rejection takes the whole server down.</p>
+<p>ShopVerse addresses these directly: it is a REST API and web frontend in which the rules that make an e-commerce system <i>correct</i> — not merely functional — are enforced on the server and verified by an automated test suite.</p>
+
+<h2>2. Objectives</h2>
+<ol>
+  <li>Build a secure REST API using JWT authentication and bcrypt password hashing.</li>
+  <li>Enforce role-based access control across Customer, Seller and Administrator roles.</li>
+  <li>Model the catalog, cart, orders, coupons and reviews in MongoDB with deliberate, documented embed-versus-reference decisions.</li>
+  <li>Implement the full order lifecycle as a controlled state machine rather than unrestricted database updates.</li>
+  <li>Keep inventory correct under concurrent access.</li>
+  <li>Validate every incoming request server-side and return consistent, documented JSON errors.</li>
+  <li>Provide seller analytics and administrative reporting using MongoDB aggregation pipelines.</li>
+  <li>Demonstrate the whole system through a Postman collection and a working web frontend.</li>
+</ol>
+
+<h2>3. Technology Stack</h2>
+<table>
+  <tr><th style="width:20%">Layer</th><th style="width:30%">Technology</th><th>Justification</th></tr>
+  <tr><td>Runtime</td><td>Node.js 22 LTS</td><td>Non-blocking I/O suits an API-heavy, I/O-bound workload.</td></tr>
+  <tr><td>Framework</td><td>Express.js 4.21</td><td>Minimal and middleware-driven, which maps cleanly onto MVC.</td></tr>
+  <tr><td>Database</td><td>MongoDB 8 (Atlas)</td><td>The document model fits orders that embed their own line items.</td></tr>
+  <tr><td>ODM</td><td>Mongoose 8</td><td>Schema validation, middleware hooks, population and index declaration.</td></tr>
+  <tr><td>Authentication</td><td>jsonwebtoken</td><td>Stateless sessions requiring no server-side session store.</td></tr>
+  <tr><td>Password hashing</td><td>bcryptjs</td><td>Adaptive cost factor; 10 rounds configured.</td></tr>
+  <tr><td>Validation</td><td>express-validator</td><td>Declarative per-route validation chains.</td></tr>
+  <tr><td>Security</td><td>helmet, cors, express-rate-limit</td><td>Security headers, origin control, brute-force protection.</td></tr>
+  <tr><td>Frontend</td><td>HTML5, CSS3, JavaScript, Bootstrap 5</td><td>Demonstrates the API live during evaluation.</td></tr>
+  <tr><td>Charts</td><td>Chart.js 4</td><td>Seller and administrator analytics.</td></tr>
+  <tr><td>Testing</td><td>Postman / Newman</td><td>104 requests and 326 assertions, runnable from the CLI.</td></tr>
+</table>
+<div class="note"><b>Express version note.</b> The project pins Express 4.x. Async controller errors do not auto-forward on version 4, so every asynchronous handler is wrapped in <code>utils/asyncHandler.js</code>, which forwards rejections to the centralised error middleware.</div>
+
+<h2>4. System Architecture</h2>
+<p>The application follows an MVC-style layering. A request passes downward through the stack, and any failure at any level is converted by a single error handler into a consistent JSON response.</p>
+<pre>Client  (browser frontend / Postman)
+   │
+Routes           Express routers + express-validator chains
+   │
+Middleware       protect (401) → authorize (403) → validate (400)
+   │
+Controllers      business logic and business-rule enforcement
+   │
+Models           Mongoose schemas, hooks, virtuals, indexes
+   │
+Database         MongoDB Atlas — 7 collections
+
+           ↓ any failure at any layer ↓
+   errorHandler → { success:false, message, errorCode }</pre>
+<table>
+  <tr><th style="width:24%">Directory</th><th>Responsibility</th></tr>
+  <tr><td><code>config/</code></td><td>Database connection and the constants that define roles, statuses and the transition graph.</td></tr>
+  <tr><td><code>models/</code></td><td>Seven Mongoose schemas with validation, hooks, virtuals and indexes.</td></tr>
+  <tr><td><code>routes/</code></td><td>Ten routers; each route declares its own auth, role and validation requirements.</td></tr>
+  <tr><td><code>controllers/</code></td><td>Ten controllers holding business logic; no SQL-style query building leaks into routes.</td></tr>
+  <tr><td><code>middleware/</code></td><td>Authentication, authorization, validation and centralised error handling.</td></tr>
+  <tr><td><code>utils/</code></td><td>Typed errors, async wrapper, response envelope, JWT helpers, pagination, seeder.</td></tr>
+</table>
+
+<h2>5. Database Design</h2>
+<p>Seven collections are used. The governing rule throughout is the one stated in the project brief: <b>embed</b> data that is always read together with its parent and rarely updated on its own; <b>reference</b> data that is large, shared across many documents, or updated independently.</p>
+<table>
+  <tr><th style="width:16%">Collection</th><th style="width:34%">Key fields</th><th style="width:24%">Relationship</th><th>Decision</th></tr>
+  <tr><td>users</td><td>name, email, password, role, addresses[]</td><td>1:N products, orders, reviews</td><td>addresses <b>embedded</b></td></tr>
+  <tr><td>categories</td><td>name, slug, parent, icon</td><td>self-reference (tree)</td><td><b>reference</b></td></tr>
+  <tr><td>products</td><td>name, price, category, seller, stock, images[]</td><td>N:1 category, N:1 seller</td><td><b>reference</b></td></tr>
+  <tr><td>carts</td><td>user, items[]</td><td>1:1 user</td><td>items <b>embedded</b></td></tr>
+  <tr><td>orders</td><td>orderNumber, user, items[], totals, status</td><td>N:1 user</td><td>items <b>embedded snapshot</b></td></tr>
+  <tr><td>coupons</td><td>code, type, value, minOrderValue, expiresAt</td><td>1:N orders</td><td><b>reference</b></td></tr>
+  <tr><td>reviews</td><td>product, user, order, rating, comment</td><td>N:1 product, N:1 user</td><td><b>reference</b></td></tr>
+</table>
+
+<h3>5.1 Why order items are embedded snapshots</h3>
+<p>This is the most consequential modelling decision in the project. Order items are embedded <i>and</i> they copy the product's name, image and price at the moment of checkout, rather than referencing the live product for display.</p>
+<p>An order is a <b>historical record</b>. If it referenced the product and the seller later raised the price or renamed the item, every past order would appear to change retrospectively — the customer's invoice would no longer match what they paid. Because the item is snapshotted, the order remains a faithful record even if the product is later edited or deactivated. The <code>product</code> ObjectId is still stored alongside the snapshot, so the catalog can be reached when it is genuinely needed.</p>
+
+<h3>5.2 Field naming</h3>
+<p>The brief lists <i>suggested</i> field names. This implementation uses idiomatic Mongoose naming, because Mongoose conveys the relationship through <code>ref</code> and an <code>Id</code> suffix becomes misleading after <code>.populate()</code> replaces the id with the document. The mapping is one-to-one.</p>
+<table>
+  <tr><th style="width:26%">Brief suggests</th><th style="width:26%">This project uses</th><th>Reason</th></tr>
+  <tr><td>passwordHash</td><td>password</td><td>Field is <code>select:false</code> and hashed by a pre-save hook; it is never anything but a hash.</td></tr>
+  <tr><td>categoryId, sellerId</td><td>category, seller</td><td>Declared with <code>ref</code>; after populate the field holds the document.</td></tr>
+  <tr><td>parentCategoryId</td><td>parent</td><td>Reads better on a self-referencing tree.</td></tr>
+  <tr><td>userId, productId</td><td>user, product</td><td>Same <code>ref</code> reasoning.</td></tr>
+  <tr><td>ratingAvg</td><td>ratingAverage</td><td>Spelled out; paired with <code>ratingCount</code>.</td></tr>
+  <tr><td>validTill</td><td>expiresAt</td><td>Matches the <code>startsAt</code>/<code>expiresAt</code> pair and the <code>-At</code> convention used throughout.</td></tr>
+  <tr><td>discountType</td><td>type</td><td>Already namespaced by the <code>coupons</code> collection.</td></tr>
+</table>
+
+<h3>5.3 Indexes</h3>
+<table>
+  <tr><th style="width:18%">Collection</th><th style="width:36%">Index</th><th>Purpose</th></tr>
+  <tr><td>users</td><td><code>{ email: 1 }</code> unique</td><td>Login lookup and uniqueness guarantee.</td></tr>
+  <tr><td>products</td><td><code>{ name, description, brand }</code> text</td><td>Keyword search without a full regex scan.</td></tr>
+  <tr><td>products</td><td><code>{ category: 1, isActive: 1 }</code></td><td>The most common listing query.</td></tr>
+  <tr><td>products</td><td><code>{ seller: 1 }</code>, <code>{ price: 1 }</code>, <code>{ ratingAverage: -1 }</code></td><td>Seller catalog; price and rating filters and sorts.</td></tr>
+  <tr><td>categories</td><td><code>{ parent: 1, isActive: 1 }</code></td><td>Building the category tree.</td></tr>
+  <tr><td>carts</td><td><code>{ user: 1 }</code> unique</td><td>Enforces exactly one cart per user.</td></tr>
+  <tr><td>orders</td><td><code>{ user: 1, createdAt: -1 }</code></td><td>"My orders", newest first.</td></tr>
+  <tr><td>orders</td><td><code>{ status: 1 }</code>, <code>{ items.seller: 1 }</code></td><td>Admin filtering; seller order queue.</td></tr>
+  <tr><td>reviews</td><td><code>{ user: 1, product: 1 }</code> unique</td><td>One review per product per customer, guaranteed by the database.</td></tr>
+</table>
+<div class="note">The final index is worth emphasising: "one review per product" is not merely an <code>if</code> statement in a controller — it is a database constraint. Even a race between two simultaneous requests cannot create a duplicate.</div>
+
+<h2>6. Modules Implemented</h2>
+<p>All fourteen mandatory modules are implemented and demonstrable. None is stubbed.</p>
+<table>
+  <tr><th style="width:5%">#</th><th style="width:26%">Module</th><th>Implementation</th></tr>
+  <tr><td>1</td><td>Registration &amp; Authentication</td><td>Self-registration for customers and sellers; bcrypt hashing; JWT access and refresh tokens. The admin role is never self-assignable.</td></tr>
+  <tr><td>2</td><td>Role-Based Access Control</td><td><code>protect</code> returns 401; <code>authorize(...roles)</code> returns 403; <code>ownsOrAdmin</code> enforces per-record ownership.</td></tr>
+  <tr><td>3</td><td>Product Catalog Management</td><td>Full CRUD scoped to the owning seller, with images, stock, brand and specifications.</td></tr>
+  <tr><td>4</td><td>Category &amp; Sub-Category</td><td>Self-referencing hierarchy with a <code>/categories/tree</code> endpoint; deletion refused while in use.</td></tr>
+  <tr><td>5</td><td>Product Search &amp; Filtering</td><td>Text-index keyword search plus category, price, rating, brand and availability filters, all combinable, with sorting and pagination.</td></tr>
+  <tr><td>6</td><td>Shopping Cart Management</td><td>Add, update, remove and clear, with the requested total validated against live stock on every change.</td></tr>
+  <tr><td>7</td><td>Order Placement &amp; Checkout</td><td>Cart converted to an order with an embedded item snapshot, shipping address and computed totals.</td></tr>
+  <tr><td>8</td><td>Order Status Workflow</td><td>Placed → Confirmed → Shipped → Delivered, with Cancelled where permitted; governed by a declared transition graph.</td></tr>
+  <tr><td>9</td><td>Inventory &amp; Stock Management</td><td>Atomic conditional <code>$inc</code> reservation; automatic restock on cancellation; low-stock endpoint for sellers.</td></tr>
+  <tr><td>10</td><td>Discount &amp; Coupon Engine</td><td>Percentage and flat coupons with maximum-discount caps, minimum-order values, expiry windows and per-user limits.</td></tr>
+  <tr><td>11</td><td>Payment Status Tracking</td><td>Payment mode and status recorded per order; mock gateway isolated behind a single function.</td></tr>
+  <tr><td>12</td><td>Reviews &amp; Ratings</td><td>Reviews permitted only after delivery; aggregate rating recomputed after every write.</td></tr>
+  <tr><td>13</td><td>Seller Dashboard APIs</td><td>Revenue, orders, rating and units-sold metrics with trends; sales analytics; product performance; scoped order queue.</td></tr>
+  <tr><td>14</td><td>Admin Reporting &amp; Analytics</td><td>Sales, top-products, user-growth and inventory reports built with aggregation pipelines.</td></tr>
+</table>
+
+<h2>7. Security Implementation</h2>
+<table>
+  <tr><th style="width:26%">Control</th><th>Implementation</th></tr>
+  <tr><td>Password hashing</td><td>bcrypt at cost factor 10, applied in a <code>pre('save')</code> hook guarded by <code>isModified('password')</code> so a profile update never double-hashes.</td></tr>
+  <tr><td>Password exposure</td><td>The field is declared <code>select: false</code>; it is only ever loaded explicitly during login.</td></tr>
+  <tr><td>Authentication</td><td>Signed JWT access tokens. The user is re-read from the database on every request, so deactivating an account revokes access immediately.</td></tr>
+  <tr><td>Authorization</td><td>Role gates and ownership checks on every write route, producing 403 distinctly from 401.</td></tr>
+  <tr><td>Account enumeration</td><td>Login returns one generic message for both a wrong email and a wrong password.</td></tr>
+  <tr><td>Input validation</td><td>express-validator chains on every write route, with Mongoose schema validation beneath as a second layer.</td></tr>
+  <tr><td>Injection safety</td><td>All queries go through Mongoose with typed schemas; <code>:id</code> parameters are ObjectId-validated before reaching the database.</td></tr>
+  <tr><td>Secrets management</td><td>Connection string and signing keys live only in <code>.env</code>, which is git-ignored; <code>.env.example</code> documents the keys with empty values.</td></tr>
+  <tr><td>Transport hardening</td><td><code>helmet</code> security headers and a strict CORS origin allowlist.</td></tr>
+  <tr><td>Brute force</td><td>Rate limiting applied to authentication routes per IP.</td></tr>
+  <tr><td>Error leakage</td><td>Stack traces are logged server-side and never returned in production responses.</td></tr>
+</table>
+
+<h2>8. Business Rules</h2>
+<p>The rules below are what distinguish the project from plain CRUD. Each is enforced on the server and covered by an automated negative test.</p>
+<table>
+  <tr><th style="width:30%">Rule</th><th style="width:47%">Enforcement</th><th style="width:23%">Rejection</th></tr>
+  <tr><td>Stock can never oversell</td><td>Single conditional <code>$inc</code> with <code>stock: { $gte: qty }</code> inside the query; a losing race receives <code>null</code>.</td><td>400 BUSINESS_RULE_VIOLATION</td></tr>
+  <tr><td>Cart respects live stock</td><td>Requested total re-checked against the product on every add or update.</td><td>400</td></tr>
+  <tr><td>Status follows the graph</td><td>Declared transition map; both the source and the target are validated.</td><td>400</td></tr>
+  <tr><td>Limited cancellation window</td><td>A customer may cancel only from Placed or Confirmed.</td><td>400</td></tr>
+  <tr><td>Cancellation restores stock</td><td>Reverse <code>$inc</code> when an order leaves the pipeline.</td><td>—</td></tr>
+  <tr><td>Coupons re-validated at checkout</td><td>The same <code>evaluate()</code> method runs at preview and at order placement.</td><td>400</td></tr>
+  <tr><td>Review requires delivery</td><td>The user must own a Delivered order containing that product.</td><td>403 FORBIDDEN</td></tr>
+  <tr><td>One review per product</td><td>Compound unique index on <code>{ user, product }</code>.</td><td>409 CONFLICT</td></tr>
+  <tr><td>Sellers are isolated</td><td>Ownership verified before any product write.</td><td>403</td></tr>
+  <tr><td>Category in use</td><td>Deletion refused while products or sub-categories reference it.</td><td>400</td></tr>
+</table>
+
+<h2>9. API Reference</h2>
+<p>All endpoints are prefixed with <code>/api</code>. Sixty-six routes are mounted in total; the principal ones are listed here, and the complete reference is in <code>docs/API-Documentation.md</code> and the exported Postman collection.</p>
+<table>
+  <tr><th style="width:9%">Method</th><th style="width:35%">Endpoint</th><th style="width:14%">Access</th><th>Description</th></tr>
+  <tr><td>POST</td><td>/auth/register</td><td>Public</td><td>Register a customer or seller</td></tr>
+  <tr><td>POST</td><td>/auth/login</td><td>Public</td><td>Authenticate and issue a JWT</td></tr>
+  <tr><td>GET</td><td>/auth/me</td><td>Any role</td><td>Current user profile</td></tr>
+  <tr><td>GET</td><td>/products</td><td>Public</td><td>List, search and filter products</td></tr>
+  <tr><td>POST</td><td>/products</td><td>Seller, Admin</td><td>Create a product</td></tr>
+  <tr><td>PUT</td><td>/products/:id</td><td>Owner, Admin</td><td>Update a product</td></tr>
+  <tr><td>GET</td><td>/products/meta/low-stock</td><td>Seller, Admin</td><td>Low-stock alert list</td></tr>
+  <tr><td>GET</td><td>/categories/tree</td><td>Public</td><td>Nested category hierarchy</td></tr>
+  <tr><td>POST</td><td>/cart</td><td>Customer</td><td>Add an item, validated against stock</td></tr>
+  <tr><td>POST</td><td>/coupons/apply</td><td>Customer</td><td>Validate and apply a coupon</td></tr>
+  <tr><td>POST</td><td>/orders</td><td>Customer</td><td>Place an order from the cart</td></tr>
+  <tr><td>PUT</td><td>/orders/:id/status</td><td>Seller, Admin</td><td>Advance the order status</td></tr>
+  <tr><td>PUT</td><td>/orders/:id/cancel</td><td>Customer</td><td>Cancel where permitted</td></tr>
+  <tr><td>POST</td><td>/payments/:orderId/initiate</td><td>Customer</td><td>Mock payment</td></tr>
+  <tr><td>POST</td><td>/products/:productId/reviews</td><td>Customer</td><td>Submit a review after delivery</td></tr>
+  <tr><td>GET</td><td>/seller/dashboard</td><td>Seller</td><td>Seller metrics and trends</td></tr>
+  <tr><td>GET</td><td>/admin/reports/sales</td><td>Admin</td><td>Sales summary report</td></tr>
+  <tr><td>GET</td><td>/admin/reports/top-products</td><td>Admin</td><td>Best-selling products</td></tr>
+  <tr><td>GET</td><td>/admin/reports/user-growth</td><td>Admin</td><td>Registrations over time</td></tr>
+</table>
+
+<h3>9.1 Response format</h3>
+<p>Every response uses one envelope. Clients branch on <code>errorCode</code>, never on the wording of <code>message</code>.</p>
+<pre>SUCCESS 200/201                          ERROR 4xx
+{                                        {
+  "success": true,                         "success": false,
+  "message": "Products fetched.",          "message": "Coupon has expired.",
+  "data": [ ... ],                         "errorCode": "BUSINESS_RULE_VIOLATION"
+  "meta": { "page": 1, "total": 33 }     }
+}</pre>
+<table>
+  <tr><th style="width:12%">Status</th><th style="width:34%">errorCode</th><th>Meaning</th></tr>
+  <tr><td>400</td><td>VALIDATION_ERROR</td><td>The request itself was malformed.</td></tr>
+  <tr><td>400</td><td>BUSINESS_RULE_VIOLATION</td><td>Well-formed, but a business rule rejected it.</td></tr>
+  <tr><td>401</td><td>UNAUTHENTICATED</td><td>Missing, malformed or expired token.</td></tr>
+  <tr><td>403</td><td>FORBIDDEN</td><td>Authenticated, but wrong role or not the owner.</td></tr>
+  <tr><td>404</td><td>NOT_FOUND</td><td>No such record.</td></tr>
+  <tr><td>409</td><td>CONFLICT</td><td>Duplicate; violates a uniqueness constraint.</td></tr>
+</table>
+
+<!-- ═══════════════ CODE SCREENSHOTS ═══════════════ -->
+<div class="pb"></div>
+<h2>10. Code Screenshots</h2>
+<p>The excerpts below show the logic behind the modules that carry business rules. The complete set of twenty-two code screenshots is in <code>docs/code-screenshots/</code>.</p>
+
+<h3>10.1 Module 1 — Password hashing</h3>
+
+<figure>
+  <img src="code-screenshots/01-module1-user-model.png" alt="The &lt;code&gt;isModified&lt;/code&gt; guard is what prevents a profile update from re-hashing an already-hashed password — a common and hard-to-diagnose bug.">
+  <figcaption><b>Figure 1.</b> The <code>isModified</code> guard is what prevents a profile update from re-hashing an already-hashed password — a common and hard-to-diagnose bug.</figcaption>
+</figure>
+
+<h3>10.2 Module 2 — Role-based access control</h3>
+
+<figure>
+  <img src="code-screenshots/05-module2-roles.png" alt="Unauthenticated requests are rejected by &lt;code&gt;protect&lt;/code&gt; with 401; wrong-role requests by &lt;code&gt;authorize&lt;/code&gt; with 403; &lt;code&gt;ownsOrAdmin&lt;/code&gt; adds per-record ownership.">
+  <figcaption><b>Figure 2.</b> Unauthenticated requests are rejected by <code>protect</code> with 401; wrong-role requests by <code>authorize</code> with 403; <code>ownsOrAdmin</code> adds per-record ownership.</figcaption>
+</figure>
+
+<h3>10.3 Module 8 — The order transition graph</h3>
+
+<figure>
+  <img src="code-screenshots/11-module8-status-graph.png" alt="The workflow is declared as data. Any transition not listed is invalid and is rejected, so status can never be set arbitrarily.">
+  <figcaption><b>Figure 3.</b> The workflow is declared as data. Any transition not listed is invalid and is rejected, so status can never be set arbitrarily.</figcaption>
+</figure>
+
+<h3>10.4 Module 9 — Atomic stock reservation</h3>
+
+<figure>
+  <img src="code-screenshots/13-module9-atomic-stock.png" alt="The stock guard lives inside the query. If two checkouts race for the last unit, exactly one matches and the other receives &lt;code&gt;null&lt;/code&gt; — stock can never go negative.">
+  <figcaption><b>Figure 4.</b> The stock guard lives inside the query. If two checkouts race for the last unit, exactly one matches and the other receives <code>null</code> — stock can never go negative.</figcaption>
+</figure>
+
+<h3>10.5 Module 10 — Coupon evaluation</h3>
+
+<figure>
+  <img src="code-screenshots/14-module10-coupon-engine.png" alt="A single method decides eligibility and returns the precise reason, so the cart preview and the checkout re-validation can never disagree.">
+  <figcaption><b>Figure 5.</b> A single method decides eligibility and returns the precise reason, so the cart preview and the checkout re-validation can never disagree.</figcaption>
+</figure>
+
+<h3>10.6 Module 12 — Review gating</h3>
+
+<figure>
+  <img src="code-screenshots/16-module12-review-gate.png" alt="A review requires a Delivered order containing that product. The duplicate check is backed by a compound unique index.">
+  <figcaption><b>Figure 6.</b> A review requires a Delivered order containing that product. The duplicate check is backed by a compound unique index.</figcaption>
+</figure>
+
+<h3>10.7 Centralised error handling</h3>
+
+<figure>
+  <img src="code-screenshots/20-error-handling.png" alt="Every Mongoose, MongoDB and JWT error shape is translated into a correct status code and a stable &lt;code&gt;errorCode&lt;/code&gt;, so nothing escapes as a raw 500.">
+  <figcaption><b>Figure 7.</b> Every Mongoose, MongoDB and JWT error shape is translated into a correct status code and a stable <code>errorCode</code>, so nothing escapes as a raw 500.</figcaption>
+</figure>
+
+<!-- ═══════════════ OUTPUT SCREENSHOTS ═══════════════ -->
+<div class="pb"></div>
+<h2>11. Output Screenshots</h2>
+<p>All screenshots were captured from the running application against the live MongoDB Atlas database. The full set of twenty-seven is in <code>docs/screenshots/</code>.</p>
+
+<h3>11.1 Home page</h3>
+
+<figure>
+  <img src="screenshots/01-home.png" alt="Category navigation, a deals section with a live countdown, and featured products loaded from the API.">
+  <figcaption><b>Figure 8.</b> Category navigation, a deals section with a live countdown, and featured products loaded from the API.</figcaption>
+</figure>
+
+<h3>11.2 Search and filtering (Module 5)</h3>
+
+<figure>
+  <img src="screenshots/04-products.png" alt="Rating and availability filters applied together and shown as removable chips; the price slider, sort order and view toggle are all combinable.">
+  <figcaption><b>Figure 9.</b> Rating and availability filters applied together and shown as removable chips; the price slider, sort order and view toggle are all combinable.</figcaption>
+</figure>
+
+<h3>11.3 Cart and coupon (Modules 6 and 10)</h3>
+
+<figure>
+  <img src="screenshots/06-cart.png" alt="Quantity is capped at live stock, &lt;code&gt;WELCOME10&lt;/code&gt; has been applied, and all totals are recalculated server-side.">
+  <figcaption><b>Figure 10.</b> Quantity is capped at live stock, <code>WELCOME10</code> has been applied, and all totals are recalculated server-side.</figcaption>
+</figure>
+
+<h3>11.4 Order tracking (Module 8)</h3>
+
+<figure>
+  <img src="screenshots/10-tracking.png" alt="The status timeline driven by the transition graph. The cancel action appears only while the rules permit it.">
+  <figcaption><b>Figure 11.</b> The status timeline driven by the transition graph. The cancel action appears only while the rules permit it.</figcaption>
+</figure>
+
+<h3>11.5 Seller dashboard (Modules 9 and 13)</h3>
+
+<figure>
+  <img src="screenshots/11-seller.png" alt="Revenue, order, product and rating KPIs with period-over-period trends, a sales chart, and the low-stock alert panel.">
+  <figcaption><b>Figure 12.</b> Revenue, order, product and rating KPIs with period-over-period trends, a sales chart, and the low-stock alert panel.</figcaption>
+</figure>
+
+<h3>11.6 Admin dashboard (Module 14)</h3>
+
+<figure>
+  <img src="screenshots/12-admin.png" alt="Platform KPIs, sales analytics, the user-growth chart, top products and an orders-by-status breakdown.">
+  <figcaption><b>Figure 13.</b> Platform KPIs, sales analytics, the user-growth chart, top products and an orders-by-status breakdown.</figcaption>
+</figure>
+
+<h3>11.7 Reviews and ratings (Module 12)</h3>
+
+<figure>
+  <img src="screenshots/13-reviews.png" alt="Rating histogram, verified-purchase badges, and filter chips. The review action is disabled for products the user has not received.">
+  <figcaption><b>Figure 14.</b> Rating histogram, verified-purchase badges, and filter chips. The review action is disabled for products the user has not received.</figcaption>
+</figure>
+
+<!-- ═══════════════ TESTING ═══════════════ -->
+<div class="pb"></div>
+<h2>12. Testing &amp; Results</h2>
+<p>The API is covered by a Postman collection of 104 requests carrying 326 assertions, runnable from the command line with Newman. Two assertions run after <i>every</i> request: the response must be JSON, and the status must be below 500.</p>
+
+<figure>
+  <img src="screenshots/18-newman-report.png" alt="Newman report: 104 requests, 326 assertions, zero failures, executed against MongoDB Atlas.">
+  <figcaption><b>Figure 15.</b> Newman report: 104 requests, 326 assertions, zero failures, executed against MongoDB Atlas.</figcaption>
+</figure>
+
+<h3>12.1 Negative testing</h3>
+<p>The negative-test folder is the part that demonstrates the rules are genuinely enforced rather than merely documented.</p>
+<table>
+  <tr><th style="width:6%">#</th><th style="width:46%">Test</th><th style="width:14%">Expected</th><th>Rule proved</th></tr>
+  <tr><td>1</td><td>Protected route with no token</td><td>401</td><td>Authentication required</td></tr>
+  <tr><td>2</td><td>Malformed or expired token</td><td>401</td><td>Tokens are verified, not trusted</td></tr>
+  <tr><td>3</td><td>Customer creates a product</td><td>403</td><td>Role-based access control</td></tr>
+  <tr><td>4</td><td>Seller reads an admin report</td><td>403</td><td>Role separation</td></tr>
+  <tr><td>5</td><td>Seller edits another seller's product</td><td>403</td><td>Per-record ownership</td></tr>
+  <tr><td>6</td><td>Registration with a duplicate email</td><td>409</td><td>Unique index on email</td></tr>
+  <tr><td>7</td><td>Password below minimum length</td><td>400</td><td>Server-side validation</td></tr>
+  <tr><td>8</td><td>Cart quantity above available stock</td><td>400</td><td>Stock validation</td></tr>
+  <tr><td>9</td><td>Adding an out-of-stock product</td><td>400</td><td>Stock validation</td></tr>
+  <tr><td>10</td><td>Applying the expired coupon</td><td>400</td><td>Coupon expiry</td></tr>
+  <tr><td>11</td><td>Coupon minimum order not met</td><td>400</td><td>Minimum-order rule</td></tr>
+  <tr><td>12</td><td>Checkout with an empty cart</td><td>400</td><td>Order precondition</td></tr>
+  <tr><td>13</td><td>Status moved Delivered → Shipped</td><td>400</td><td>Transition graph</td></tr>
+  <tr><td>14</td><td>Cancelling a delivered order</td><td>400</td><td>Cancellation window</td></tr>
+  <tr><td>15</td><td>Reviewing a product never purchased</td><td>403</td><td>Review gating</td></tr>
+  <tr><td>16</td><td>Second review on the same product</td><td>409</td><td>Compound unique index</td></tr>
+  <tr><td>17</td><td>Malformed ObjectId in the URL</td><td>400</td><td>Guarded before Mongoose</td></tr>
+  <tr><td>18</td><td>Valid but non-existent id</td><td>404</td><td>Correct not-found handling</td></tr>
+</table>
+
+<figure>
+  <img src="screenshots/19-api-negative-tests.png" alt="Live responses for the security and business-rule tests. Critically, none of these returns 500 — every failure mode is handled deliberately.">
+  <figcaption><b>Figure 16.</b> Live responses for the security and business-rule tests. Critically, none of these returns 500 — every failure mode is handled deliberately.</figcaption>
+</figure>
+
+<h3>12.2 Security evidence</h3>
+
+<figure>
+  <img src="screenshots/20-db-users-bcrypt.png" alt="The users collection read directly from Atlas. Every password is a bcrypt hash beginning &lt;code&gt;$2a$10$&lt;/code&gt;; no plaintext password is stored anywhere.">
+  <figcaption><b>Figure 17.</b> The users collection read directly from Atlas. Every password is a bcrypt hash beginning <code>$2a$10$</code>; no plaintext password is stored anywhere.</figcaption>
+</figure>
+
+<figure>
+  <img src="screenshots/21-db-order-embedded.png" alt="An order document showing the embedded item snapshot and the &lt;code&gt;statusHistory&lt;/code&gt; audit trail of the workflow.">
+  <figcaption><b>Figure 18.</b> An order document showing the embedded item snapshot and the <code>statusHistory</code> audit trail of the workflow.</figcaption>
+</figure>
+
+<h3>12.3 Summary of results</h3>
+<table>
+  <tr><th style="width:50%">Metric</th><th>Result</th></tr>
+  <tr><td>Mandatory modules implemented</td><td>14 of 14</td></tr>
+  <tr><td>REST endpoints mounted</td><td>66</td></tr>
+  <tr><td>MongoDB collections</td><td>7</td></tr>
+  <tr><td>Postman requests / assertions</td><td>104 / 326</td></tr>
+  <tr><td>Assertion failures</td><td>0</td></tr>
+  <tr><td>Endpoints returning 500 on any tested path</td><td>0</td></tr>
+  <tr><td>Frontend pages</td><td>13, responsive, with dark mode</td></tr>
+</table>
+
+<h2>13. Setup Instructions</h2>
+<pre># 1. Clone and install
+git clone &lt;repository-url&gt;
+cd shopverse-ecommerce-platform/backend
+npm install
+
+# 2. Configure environment
+copy .env.example .env
+#    then fill in MONGO_URI, JWT_SECRET and JWT_REFRESH_SECRET
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+
+# 3. Seed demo data
+npm run seed
+
+# 4. Run
+npm run dev                      # API on http://localhost:5000
+
+# 5. Frontend
+#    open frontend/index.html with the VS Code Live Server extension</pre>
+<table>
+  <tr><th style="width:32%">Variable</th><th>Purpose</th></tr>
+  <tr><td><code>MONGO_URI</code></td><td>MongoDB Atlas connection string.</td></tr>
+  <tr><td><code>JWT_SECRET</code> / <code>JWT_REFRESH_SECRET</code></td><td>Signing keys; must be different from one another.</td></tr>
+  <tr><td><code>BCRYPT_SALT_ROUNDS</code></td><td>bcrypt cost factor (10).</td></tr>
+  <tr><td><code>CLIENT_URL</code></td><td>Allowed CORS origin.</td></tr>
+  <tr><td><code>LOW_STOCK_THRESHOLD</code></td><td>Drives the seller low-stock alert.</td></tr>
+  <tr><td><code>FREE_DELIVERY_ABOVE</code>, <code>DELIVERY_CHARGE</code></td><td>Delivery pricing rules.</td></tr>
+</table>
+<h3>13.1 Demo accounts</h3>
+<table>
+  <tr><th style="width:20%">Role</th><th style="width:40%">Email</th><th>Password</th></tr>
+  <tr><td>Administrator</td><td>admin@shopverse.com</td><td>Admin@12345</td></tr>
+  <tr><td>Seller</td><td>seller1@shopverse.com</td><td>Seller@12345</td></tr>
+  <tr><td>Customer</td><td>customer1@gmail.com</td><td>Customer@12345</td></tr>
+</table>
+<div class="warn"><b>Coupons for the demo.</b> <code>WELCOME10</code>, <code>FLAT350</code> and <code>MEGA50</code> succeed. <code>EXPIRED20</code> and <code>BIGONLY</code> are seeded to <i>fail</i> on purpose — they demonstrate expiry and minimum-order validation during the walkthrough.</div>
+
+<h2>14. Known Limitations</h2>
+<p>The following are out of scope by design, consistent with the boundaries stated in the project brief.</p>
+<ul>
+  <li>The payment gateway is mocked; no real transaction is processed.</li>
+  <li>No email or SMS notification service is integrated.</li>
+  <li>A single currency (INR) and a single time zone are assumed.</li>
+  <li>Product images are external URLs rather than uploaded files.</li>
+  <li>Social login is not implemented; authentication is a self-built JWT flow.</li>
+  <li>Multi-document transactions are not used; stock safety is achieved instead through atomic conditional updates, which is sufficient for the single-document guarantees required here.</li>
+</ul>
+
+<h2>15. Conclusion</h2>
+<p>ShopVerse implements the complete product-to-order lifecycle for three distinct roles on a MongoDB schema whose embed-versus-reference decisions were made deliberately and documented rather than chosen arbitrarily.</p>
+<p>What separates it from a CRUD application is that the rules are enforced where they cannot be bypassed. Inventory is correct under concurrency because the stock guard sits inside the update query. The order lifecycle is a declared state machine rather than an editable field. Authorization is checked per role and per record, returning 401 and 403 as distinct outcomes. Coupons and reviews are re-validated on the server and never trusted from the client. Every error, from a malformed ObjectId to a violated unique index, is translated into a consistent JSON response with a stable machine-readable code.</p>
+<p>The result is verified rather than asserted: 326 assertions across 104 requests pass against a live Atlas cluster, and no tested path returns a 500.</p>
+
+<p style="margin-top:26pt;text-align:center;color:#8e8e8e;font-size:9pt">— End of Report —</p>
+</body></html>
