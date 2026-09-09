@@ -1,0 +1,50 @@
+# ─── dependencies ────────────────────────────────────────────────
+node_modules/
+jspm_packages/
+package-lock.json.bak
+
+# ─── environment: NEVER commit real secrets ──────────────────────
+# .env holds the MongoDB URI and JWT signing keys.
+# .env.example is committed instead - same keys, empty values.
+.env
+.env.*
+!.env.example
+
+# ─── runtime / uploads ───────────────────────────────────────────
+/uploads
+uploads/
+*.log
+logs/
+npm-debug.log*
+pid
+*.pid
+*.seed
+
+# ─── build artefacts and generated intermediates ─────────────────
+coverage/
+dist/
+build/
+.cache/
+docs/_report-assets/
+docs/_report-compressed.html
+
+# High-resolution print copy of the report: 25 MB and byte-for-byte
+# the same content as docs/ShopVerse-Report.pdf, which IS committed.
+# Kept locally for printing; excluded to keep the clone small.
+docs/ShopVerse-Report-HighRes.pdf
+
+# ─── editor / OS noise ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+*.swp
+*~
+.vscode/*
+!.vscode/extensions.json
+
+# ─── Office lock files (created while a doc is open) ─────────────
+~$*.pptx
+~$*.docx
+~$*.xlsx
+.~lock.*
