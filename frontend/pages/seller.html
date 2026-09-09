@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seller Dashboard — ShopVerse</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/tokens.css" rel="stylesheet">
+  <link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body>
+
+<div id="sv-header"></div>
+
+<div class="sv-shell">
+  <nav class="sv-side" aria-label="Seller navigation">
+    <a href="#dashboard" data-view="dashboard" class="active"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a href="#products" data-view="products"><i class="bi bi-box-seam"></i> My Products</a>
+    <a href="#orders" data-view="orders"><i class="bi bi-receipt"></i> Orders</a>
+    <a href="#inventory" data-view="inventory"><i class="bi bi-boxes"></i> Inventory</a>
+    <a href="#reviews" data-view="reviews"><i class="bi bi-star"></i> Reviews</a>
+  </nav>
+
+  <main class="sv-main">
+    <div id="view"></div>
+  </main>
+</div>
+
+<!-- Add / edit product -->
+<div class="modal fade" id="prodModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:var(--r-lg)">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="prodModalTitle">Add product</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="prodForm">
+          <input type="hidden" id="pId">
+          <div class="row g-3">
+            <div class="col-12 field mb-0">
+              <label for="pName">Product name</label>
+              <input class="input" id="pName" required minlength="3" maxlength="140">
+            </div>
+            <div class="col-12 field mb-0">
+              <label for="pDesc">Description</label>
+              <textarea class="textarea" id="pDesc" rows="4" required minlength="20"></textarea>
+              <span class="field-hint">At least 20 characters. A fuller description sells better.</span>
+            </div>
+            <div class="col-md-6 field mb-0">
+              <label for="pCat">Category</label>
+              <select class="select" id="pCat" required></select>
+            </div>
+            <div class="col-md-6 field mb-0">
+              <label for="pBrand">Brand</label>
+              <input class="input" id="pBrand" value="Generic">
+            </div>
+            <div class="col-md-4 field mb-0">
+              <label for="pPrice">Selling price (₹)</label>
+              <input class="input" id="pPrice" type="number" min="1" required>
+            </div>
+            <div class="col-md-4 field mb-0">
+              <label for="pMrp">MRP (₹)</label>
+              <input class="input" id="pMrp" type="number" min="0">
+            </div>
+            <div class="col-md-4 field mb-0">
+              <label for="pStock">Stock</label>
+              <input class="input" id="pStock" type="number" min="0" required>
+            </div>
+            <div class="col-12 field mb-0">
+              <label for="pImages">Image URLs</label>
+              <textarea class="textarea" id="pImages" rows="2" required
+                        placeholder="https://picsum.photos/seed/demo/800/800"></textarea>
+              <span class="field-hint">One URL per line. At least one is required.</span>
+            </div>
+          </div>
+          <button class="btn-sv btn-primary-sv btn-block mt-4" type="submit" id="prodSubmit">Save product</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/ui.js"></script>
+<script>
+(async function () {
+  UI.mountLayout({ withFooter: false });
+  if (!UI.requireAuth('seller', 'admin')) return;
+
+  const view = document.getElementById('view');
+  let salesChart = null;
+  let categories = [];
+  let prodModal = null;
+
+  /* ------------------------------ navigation ----------------------------- */
+
+  const routes = { dashboard, products, orders, inventory, reviews };
+
+  function go(name) {
+    document.querySelectorAll('.sv-side a').forEach((a) =>
+      a.classList.toggle('active', a.dataset.view === name)
+    );
+    (routes[name] || dashboard)();
+  }
+
+  document.querySelectorAll('.sv-side a').forEach((a) =>
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      location.hash = a.dataset.view;
+      go(a.dataset.view);
+    })
+  );
+
+  const trend = (n) => {
+    const cls = n > 0 ? 'up' : n < 0 ? 'down' : 'flat';
+    const icon = n > 0 ? 'bi-arrow-up-right' : n < 0 ? 'bi-arrow-down-right' : 'bi-dash';
+    return `<span class="trend ${cls}"><i class="bi ${icon}"></i>${Math.abs(n)}% vs previous period</span>`;
+  };
+
+  const kpi = (icon, bg, color, value, label, trendPct) => `
+    <div class="kpi">
+      <div class="ico" style="background:${bg};color:${color}"><i class="bi ${icon}"></i></div>
+      <div class="val">${value}</div>
+      <div class="lbl">${label}</div>
+      ${trendPct !== undefined ? trend(trendPct) : ''}
+    </div>`;
+
+  /* ------------------------------- dashboard ----------------------------- */
+
+  async function dashboard() {
+    view.innerHTML = `
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <h1 style="font-size:var(--t-xl);margin:0">Welcome, ${UI.esc(SV.getUser()?.name?.split(' ')[0] || 'Seller')}!</h1>
+          <p class="muted mb-0" style="font-size:var(--t-sm)">Here is what is happening with your store.</p>
+        </div>
+        <select class="select" id="range" style="width:auto">
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option>
+        </select>
+      </div>
+      <div class="row g-3 mb-4" id="kpis">
+        ${'<div class="col-6 col-lg-3"><div class="kpi"><div class="sk sk-text" style="height:70px"></div></div></div>'.repeat(4)}
+      </div>
+      <div class="row g-3">
+        <div class="col-lg-8">
+          <div class="sv-card sv-card-pad">
+            <h2 style="font-size:var(--t-md)" class="mb-3">Sales overview</h2>
+            <canvas id="salesChart" height="110"></canvas>
+          </div>
+        </div>
+        <div class="col-lg-4"><div id="lowStockPanel"></div></div>
+        <div class="col-lg-8">
+          <div class="sv-card sv-card-pad">
+            <h2 style="font-size:var(--t-md)" class="mb-3">Recent orders</h2>
+            <div class="table-scroll"><table class="tbl">
+              <thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+              <tbody id="recentOrders">${UI.skeletonRows(4, 5)}</tbody>
+            </table></div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="sv-card sv-card-pad">
+            <h2 style="font-size:var(--t-md)" class="mb-3">Top products</h2>
+            <div id="topProducts">${UI.skeletonRows(4, 1)}</div>
+          </div>
+        </div>
+      </div>`;
+
+    document.getElementById('range').addEventListener('change', (e) => loadStats(Number(e.target.value)));
+    loadStats(30);
+    loadLowStock();
+    loadRecentOrders();
+    loadTopProducts();
+  }
+
+  async function loadStats(days) {
+    try {
+      const [d, s] = await Promise.all([
+        SV.api.seller.dashboard(days),
+        SV.api.seller.salesAnalytics(days),
+      ]);
+      const k = d.data;
+
+      document.getElementById('kpis').innerHTML = `
+        <div class="col-6 col-lg-3">${kpi('bi-currency-rupee', 'var(--success-bg)', 'var(--success)', UI.money(k.totalSales), 'Total Sales', k.totalSalesTrend)}</div>
+        <div class="col-6 col-lg-3">${kpi('bi-receipt', 'var(--info-bg)', 'var(--info)', k.orderCount, 'Orders', k.orderCountTrend)}</div>
+        <div class="col-6 col-lg-3">${kpi('bi-box-seam', 'var(--brand-50)', 'var(--brand-700)', k.productCount, 'Products')}</div>
+        <div class="col-6 col-lg-3">${kpi('bi-star-fill', 'var(--warning-bg)', 'var(--accent-amber)', k.averageRating || '—', `Avg. Rating (${k.totalReviews} reviews)`)}</div>`;
+
+      drawChart(s.data);
+    } catch (err) {
+      document.getElementById('kpis').innerHTML =
+        `<div class="col-12">${UI.empty('bi-plug', 'Could not load stats', err.message)}</div>`;
+    }
+  }
+
+  function drawChart(series) {
+    const canvas = document.getElementById('salesChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+    gradient.addColorStop(0, 'rgba(45,106,79,.28)');
+    gradient.addColorStop(1, 'rgba(45,106,79,0)');
+
+    salesChart?.destroy();
+    salesChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: series.map((d) =>
+          new Date(d.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+        ),
+        datasets: [{
+          label: 'Revenue',
+          data: series.map((d) => d.revenue),
+          borderColor: '#2d6a4f',
+          backgroundColor: gradient,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          borderWidth: 2,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: { label: (c) => `₹${Number(c.parsed.y).toLocaleString('en-IN')}` },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { callback: (v) => `₹${v >= 1000 ? `${v / 1000}k` : v}` },
+            grid: { color: 'rgba(128,128,128,.12)' },
+          },
+          x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+        },
+      },
+    });
+  }
+
+  /** The low-stock alert panel - a stated project feature. */
+  async function loadLowStock(target = 'lowStockPanel') {
+    const host = document.getElementById(target);
+    if (!host) return;
+
+    try {
+      const { data, meta } = await SV.api.products.lowStock();
+      host.innerHTML = data.length
+        ? `<div class="alert-low">
+             <h6><i class="bi bi-exclamation-triangle-fill"></i> Low Stock Alert (${data.length})</h6>
+             <p class="mb-3" style="font-size:var(--t-xs);color:var(--ink-600)">
+               At or below ${meta.threshold} units. Restock before you run out.
+             </p>
+             ${data.slice(0, 6).map((p) => `
+               <div class="d-flex align-items-center gap-2 mb-2">
+                 <img src="${UI.esc(p.images?.[0] || '')}" alt="" style="width:36px;height:36px;object-fit:cover;border-radius:var(--r-sm)">
+                 <div class="flex-grow-1 min-w-0">
+                   <div class="text-truncate" style="font-size:var(--t-xs);font-weight:600">${UI.esc(p.name)}</div>
+                   <small class="${p.stock === 0 ? 'stock-out' : 'stock-warn'}">
+                     ${p.stock === 0 ? 'Out of stock' : `${p.stock} left`}
+                   </small>
+                 </div>
+                 <button class="btn-sv btn-ghost-sv" data-restock="${p._id}" style="padding:3px 9px;font-size:11px">Restock</button>
+               </div>`).join('')}
+             ${data.length > 6 ? `<a href="#inventory" class="d-block mt-2" style="font-size:var(--t-xs)">View all ${data.length} →</a>` : ''}
+           </div>`
+        : `<div class="sv-card sv-card-pad text-center">
+             <i class="bi bi-check-circle" style="font-size:30px;color:var(--success)"></i>
+             <p class="muted mt-2 mb-0" style="font-size:var(--t-sm)">All products are well stocked.</p>
+           </div>`;
+
+      host.querySelectorAll('[data-restock]').forEach((btn) =>
+        btn.addEventListener('click', () => restock(btn.dataset.restock))
+      );
+    } catch (err) {
+      host.innerHTML = `<div class="sv-card sv-card-pad"><small class="dim">${UI.esc(err.message)}</small></div>`;
+    }
+  }
+
+  async function restock(productId) {
+    const value = prompt('Set the new stock quantity for this product:');
+    if (value === null) return;
+
+    const stock = Number(value);
+    if (!Number.isInteger(stock) || stock < 0) {
+      UI.toast('Enter a whole number of 0 or more.', 'warning');
+      return;
+    }
+    try {
+      await SV.api.products.setStock(productId, stock);
+      UI.toastOk(`Stock updated to ${stock}.`);
+      go(location.hash.slice(1) || 'dashboard');
+    } catch (err) { UI.toastErr(err); }
+  }
+
+  async function loadRecentOrders() {
+    const host = document.getElementById('recentOrders');
+    if (!host) return;
+    try {
+      const { data } = await SV.api.seller.orders({ limit: 6 });
+      host.innerHTML = data.length
+        ? data.map((o) => `
+            <tr>
+              <td><strong>#${UI.esc(o.orderNumber)}</strong><br><small class="dim">${UI.date(o.createdAt)}</small></td>
+              <td>${UI.esc(o.user?.name || '—')}</td>
+              <td class="price"><strong>${UI.money(o.myItemsTotal)}</strong></td>
+              <td><span class="status status-${UI.esc(o.status)}">${UI.esc(o.status)}</span></td>
+              <td><a href="order.html?id=${o._id}" style="font-size:var(--t-xs)">View</a></td>
+            </tr>`).join('')
+        : '<tr><td colspan="5" class="text-center dim py-4">No orders yet.</td></tr>';
+    } catch (err) {
+      host.innerHTML = `<tr><td colspan="5" class="dim">${UI.esc(err.message)}</td></tr>`;
+    }
+  }
+
+  async function loadTopProducts() {
+    const host = document.getElementById('topProducts');
+    if (!host) return;
+    try {
+      const { data } = await SV.api.seller.performance();
+      host.innerHTML = data.length
+        ? data.slice(0, 5).map((p) => `
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <img src="${UI.esc(p.image || '')}" alt="" style="width:38px;height:38px;object-fit:cover;border-radius:var(--r-sm)">
+              <div class="flex-grow-1 min-w-0">
+                <div class="text-truncate" style="font-size:var(--t-xs);font-weight:600">${UI.esc(p.name)}</div>
+                <small class="dim num">${p.unitsSold} sold</small>
+              </div>
+              <strong class="price" style="font-size:var(--t-sm)">${UI.money(p.revenue)}</strong>
+            </div>`).join('')
+        : '<p class="dim" style="font-size:var(--t-sm)">No sales yet.</p>';
+    } catch (_) { host.innerHTML = ''; }
+  }
+
+  /* -------------------------------- products ----------------------------- */
+
+  async function products() {
+    view.innerHTML = `
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <h1 style="font-size:var(--t-xl);margin:0">My Products</h1>
+        <div class="d-flex gap-2">
+          <input class="input" id="pSearch" placeholder="Search my products…" style="width:220px">
+          <button class="btn-sv btn-primary-sv" id="addProd"><i class="bi bi-plus-lg"></i> Add product</button>
+        </div>
+      </div>
+      <div class="sv-card sv-card-pad">
+        <div class="table-scroll"><table class="tbl">
+          <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Rating</th><th>Sold</th><th></th></tr></thead>
+          <tbody id="prodRows">${UI.skeletonRows(6, 7)}</tbody>
+        </table></div>
+      </div>`;
+
+    document.getElementById('addProd').addEventListener('click', () => openProductModal());
+
+    let timer;
+    document.getElementById('pSearch').addEventListener('input', (e) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => loadProductRows(e.target.value), 300);
+    });
+
+    await loadCategories();
+    loadProductRows();
+  }
+
+  async function loadProductRows(search = '') {
+    const host = document.getElementById('prodRows');
+    if (!host) return;
+    try {
+      const { data } = await SV.api.seller.products({ search: search || undefined, limit: 100 });
+      host.innerHTML = data.length
+        ? data.map((p) => `
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <img src="${UI.esc(p.images?.[0] || '')}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:var(--r-sm)">
+                  <div class="min-w-0">
+                    <strong class="d-block text-truncate" style="max-width:260px">${UI.esc(p.name)}</strong>
+                    <small class="dim">${UI.esc(p.brand)}${p.isActive ? '' : ' · delisted'}</small>
+                  </div>
+                </div>
+              </td>
+              <td>${UI.esc(p.category?.name || '—')}</td>
+              <td class="price"><strong>${UI.money(p.price)}</strong></td>
+              <td>
+                <span class="${p.stock === 0 ? 'stock-out' : p.stock <= 10 ? 'stock-warn' : 'stock-ok'} num">${p.stock}</span>
+              </td>
+              <td>${p.ratingCount ? `${UI.stars(p.ratingAverage)} <small class="dim">(${p.ratingCount})</small>` : '<small class="dim">—</small>'}</td>
+              <td class="num">${p.numSold || 0}</td>
+              <td class="text-nowrap">
+                <button class="btn-sv btn-ghost-sv" data-edit="${p._id}" style="padding:4px 9px;font-size:11px">Edit</button>
+                <button class="btn-sv btn-ghost-sv" data-restock="${p._id}" style="padding:4px 9px;font-size:11px">Stock</button>
+                <button class="btn-sv btn-ghost-sv" data-del="${p._id}" style="padding:4px 9px;font-size:11px;color:var(--danger)">Delete</button>
+              </td>
+            </tr>`).join('')
+        : '<tr><td colspan="7" class="text-center dim py-4">No products yet. Add your first one.</td></tr>';
+
+      host.querySelectorAll('[data-edit]').forEach((b) =>
+        b.addEventListener('click', () => openProductModal(data.find((p) => p._id === b.dataset.edit)))
+      );
+      host.querySelectorAll('[data-restock]').forEach((b) =>
+        b.addEventListener('click', () => restock(b.dataset.restock))
+      );
+      host.querySelectorAll('[data-del]').forEach((b) =>
+        b.addEventListener('click', async () => {
+          if (!confirm('Delete this product? Products with past orders are delisted instead.')) return;
+          try {
+            const res = await SV.api.products.remove(b.dataset.del);
+            UI.toastOk(res.message);
+            loadProductRows(search);
+          } catch (err) { UI.toastErr(err); }
+        })
+      );
+    } catch (err) {
+      host.innerHTML = `<tr><td colspan="7" class="dim">${UI.esc(err.message)}</td></tr>`;
+    }
+  }
+
+  async function loadCategories() {
+    if (categories.length) return;
+    try {
+      const { data } = await SV.api.categories.list();
+      // Only leaf categories are selectable, so products never sit on a parent.
+      categories = data.filter((c) => c.parent);
+    } catch (_) { categories = []; }
+  }
+
+  async function openProductModal(product) {
+    await loadCategories();
+
+    document.getElementById('prodModalTitle').textContent = product ? 'Edit product' : 'Add product';
+    document.getElementById('pCat').innerHTML = categories
+      .map((c) => `<option value="${c._id}">${UI.esc(c.parent?.name ? `${c.parent.name} › ` : '')}${UI.esc(c.name)}</option>`)
+      .join('');
+
+    document.getElementById('pId').value = product?._id || '';
+    document.getElementById('pName').value = product?.name || '';
+    document.getElementById('pDesc').value = product?.description || '';
+    document.getElementById('pBrand').value = product?.brand || 'Generic';
+    document.getElementById('pPrice').value = product?.price || '';
+    document.getElementById('pMrp').value = product?.mrp || '';
+    document.getElementById('pStock').value = product?.stock ?? '';
+    document.getElementById('pImages').value = (product?.images || []).join('\n');
+    if (product?.category) {
+      document.getElementById('pCat').value = product.category._id || product.category;
+    }
+
+    prodModal = prodModal || new bootstrap.Modal(document.getElementById('prodModal'));
+    prodModal.show();
+  }
+
+  document.getElementById('prodForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const images = document.getElementById('pImages').value
+      .split('\n').map((s) => s.trim()).filter(Boolean);
+
+    if (!images.length) { UI.toast('At least one image URL is required.', 'warning'); return; }
+
+    const payload = {
+      name: document.getElementById('pName').value.trim(),
+      description: document.getElementById('pDesc').value.trim(),
+      brand: document.getElementById('pBrand').value.trim() || 'Generic',
+      category: document.getElementById('pCat').value,
+      price: Number(document.getElementById('pPrice').value),
+      mrp: Number(document.getElementById('pMrp').value) || undefined,
+      stock: Number(document.getElementById('pStock').value),
+      images,
+    };
+
+    const id = document.getElementById('pId').value;
+    const btn = document.getElementById('prodSubmit');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving…';
+
+    try {
+      if (id) await SV.api.products.update(id, payload);
+      else await SV.api.products.create(payload);
+
+      UI.toastOk(id ? 'Product updated.' : 'Product created.');
+      prodModal.hide();
+      loadProductRows();
+    } catch (err) {
+      UI.toastErr(err);
+      (err.errors || []).forEach((fe) => UI.toast(`${fe.field}: ${fe.message}`, 'error'));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save product';
+    }
+  });
+
+  /* --------------------------------- orders ------------------------------ */
+
+  async function orders() {
+    view.innerHTML = `
+      <h1 style="font-size:var(--t-xl)" class="mb-1">Orders</h1>
+      <p class="muted" style="font-size:var(--t-sm)">Orders containing your products. Move each one along the pipeline.</p>
+      <div class="d-flex flex-wrap gap-2 my-4" id="ordFilters">
+        <button class="chip chip-brand" data-s="">All</button>
+        <button class="chip" data-s="Placed">Placed</button>
+        <button class="chip" data-s="Confirmed">Confirmed</button>
+        <button class="chip" data-s="Shipped">Shipped</button>
+        <button class="chip" data-s="Delivered">Delivered</button>
+        <button class="chip" data-s="Cancelled">Cancelled</button>
+      </div>
+      <div class="sv-card sv-card-pad">
+        <div class="table-scroll"><table class="tbl">
+          <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="ordRows">${UI.skeletonRows(6, 6)}</tbody>
+        </table></div>
+      </div>`;
+
+    document.querySelectorAll('#ordFilters [data-s]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#ordFilters [data-s]').forEach((b) => b.classList.remove('chip-brand'));
+        btn.classList.add('chip-brand');
+        loadOrderRows(btn.dataset.s);
+      })
+    );
+
+    loadOrderRows();
+  }
+
+  /* The only transitions a seller may drive, mirroring the API's graph. */
+  const NEXT = { Placed: 'Confirmed', Confirmed: 'Shipped', Shipped: 'Delivered' };
+
+  async function loadOrderRows(status = '') {
+    const host = document.getElementById('ordRows');
+    if (!host) return;
+    try {
+      const { data } = await SV.api.seller.orders({ status: status || undefined, limit: 100 });
+      host.innerHTML = data.length
+        ? data.map((o) => `
+            <tr>
+              <td><strong>#${UI.esc(o.orderNumber)}</strong><br><small class="dim">${UI.date(o.createdAt)}</small></td>
+              <td>${UI.esc(o.user?.name || '—')}<br><small class="dim">${UI.esc(o.user?.phone || '')}</small></td>
+              <td>
+                ${o.items.map((i) => `<div class="text-truncate" style="max-width:220px;font-size:var(--t-xs)">${UI.esc(i.name)} × ${i.quantity}</div>`).join('')}
+              </td>
+              <td class="price"><strong>${UI.money(o.myItemsTotal)}</strong></td>
+              <td><span class="status status-${UI.esc(o.status)}">${UI.esc(o.status)}</span></td>
+              <td class="text-nowrap">
+                ${NEXT[o.status]
+                  ? `<button class="btn-sv btn-primary-sv" data-next="${o._id}" data-to="${NEXT[o.status]}" style="padding:4px 10px;font-size:11px">
+                       Mark ${NEXT[o.status]}
+                     </button>`
+                  : '<small class="dim">No action</small>'}
+                ${['Placed', 'Confirmed'].includes(o.status)
+                  ? `<button class="btn-sv btn-ghost-sv" data-cancel="${o._id}" style="padding:4px 10px;font-size:11px;color:var(--danger)">Cancel</button>` : ''}
+              </td>
+            </tr>`).join('')
+        : '<tr><td colspan="6" class="text-center dim py-4">No orders found.</td></tr>';
+
+      host.querySelectorAll('[data-next]').forEach((btn) =>
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            await SV.api.orders.setStatus(btn.dataset.next, btn.dataset.to);
+            UI.toastOk(`Order marked as ${btn.dataset.to}.`);
+            loadOrderRows(status);
+          } catch (err) { UI.toastErr(err); btn.disabled = false; }
+        })
+      );
+
+      host.querySelectorAll('[data-cancel]').forEach((btn) =>
+        btn.addEventListener('click', async () => {
+          const reason = prompt('Reason for cancelling this order:');
+          if (reason === null) return;
+          try {
+            await SV.api.orders.setStatus(btn.dataset.cancel, 'Cancelled', reason || 'Cancelled by seller.');
+            UI.toastOk('Order cancelled and stock restored.');
+            loadOrderRows(status);
+          } catch (err) { UI.toastErr(err); }
+        })
+      );
+    } catch (err) {
+      host.innerHTML = `<tr><td colspan="6" class="dim">${UI.esc(err.message)}</td></tr>`;
+    }
+  }
+
+  /* ------------------------------- inventory ----------------------------- */
+
+  async function inventory() {
+    view.innerHTML = `
+      <h1 style="font-size:var(--t-xl)" class="mb-1">Inventory</h1>
+      <p class="muted" style="font-size:var(--t-sm)">Everything at or below the low-stock threshold.</p>
+      <div class="row g-3 mt-2">
+        <div class="col-lg-5"><div id="invAlert"></div></div>
+        <div class="col-lg-7">
+          <div class="sv-card sv-card-pad">
+            <h2 style="font-size:var(--t-md)" class="mb-3">Stock by product</h2>
+            <div class="table-scroll"><table class="tbl">
+              <thead><tr><th>Product</th><th>Stock</th><th>Status</th><th></th></tr></thead>
+              <tbody id="invRows">${UI.skeletonRows(6, 4)}</tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>`;
+
+    loadLowStock('invAlert');
+
+    try {
+      const { data } = await SV.api.seller.products({ limit: 100 });
+      const sorted = [...data].sort((a, b) => a.stock - b.stock);
+      document.getElementById('invRows').innerHTML = sorted
+        .map((p) => `
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <img src="${UI.esc(p.images?.[0] || '')}" alt="" style="width:34px;height:34px;object-fit:cover;border-radius:var(--r-sm)">
+                <strong class="text-truncate d-block" style="max-width:220px">${UI.esc(p.name)}</strong>
+              </div>
+            </td>
+            <td class="num"><strong>${p.stock}</strong></td>
+            <td>
+              ${p.stock === 0
+                ? '<span class="status status-Cancelled">Out of stock</span>'
+                : p.stock <= 10
+                ? '<span class="status status-Shipped">Low</span>'
+                : '<span class="status status-Delivered">Healthy</span>'}
+            </td>
+            <td><button class="btn-sv btn-ghost-sv" data-restock="${p._id}" style="padding:4px 10px;font-size:11px">Update</button></td>
+          </tr>`)
+        .join('');
+
+      document.querySelectorAll('#invRows [data-restock]').forEach((b) =>
+        b.addEventListener('click', () => restock(b.dataset.restock))
+      );
+    } catch (err) {
+      document.getElementById('invRows').innerHTML =
+        `<tr><td colspan="4" class="dim">${UI.esc(err.message)}</td></tr>`;
+    }
+  }
+
+  /* -------------------------------- reviews ------------------------------ */
+
+  async function reviews() {
+    view.innerHTML = `
+      <h1 style="font-size:var(--t-xl)" class="mb-1">Reviews</h1>
+      <p class="muted" style="font-size:var(--t-sm)">What customers are saying about your products.</p>
+      <div id="revList" class="mt-4"></div>`;
+
+    try {
+      const { data } = await SV.api.seller.reviews();
+      document.getElementById('revList').innerHTML = data.length
+        ? data.map((r) => `
+            <div class="sv-card sv-card-pad mb-3">
+              <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                <div class="d-flex align-items-center gap-2">
+                  <img src="${UI.esc(r.product?.images?.[0] || '')}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:var(--r-sm)">
+                  <div>
+                    <strong style="font-size:var(--t-sm)">${UI.esc(r.product?.name || 'Product')}</strong>
+                    <div>${UI.stars(r.rating)} <small class="dim">by ${UI.esc(r.user?.name || 'Customer')}</small></div>
+                  </div>
+                </div>
+                <small class="dim">${UI.date(r.createdAt)}</small>
+              </div>
+              ${r.title ? `<strong style="font-size:var(--t-sm)">${UI.esc(r.title)}</strong>` : ''}
+              <p class="muted mb-0" style="font-size:var(--t-sm)">${UI.esc(r.comment)}</p>
+            </div>`).join('')
+        : UI.empty('bi-chat-square-text', 'No reviews yet', 'Reviews appear here once customers rate your products.');
+    } catch (err) {
+      document.getElementById('revList').innerHTML = UI.empty('bi-plug', 'Could not load reviews', err.message);
+    }
+  }
+
+  go(location.hash.slice(1) || 'dashboard');
+})();
+</script>
+</body>
+</html>

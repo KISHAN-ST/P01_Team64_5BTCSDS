@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — ShopVerse</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/tokens.css" rel="stylesheet">
+  <link href="../assets/css/main.css" rel="stylesheet">
+  <style>
+    .addr-card {
+      border: 2px solid var(--line);
+      border-radius: var(--r-md);
+      padding: var(--s-4);
+      cursor: pointer;
+      transition: all var(--transition);
+      background: var(--surface);
+    }
+    .addr-card:has(input:checked) { border-color: var(--brand-700); background: var(--brand-50); }
+    .addr-card input { accent-color: var(--brand-700); }
+    .pay-processing { text-align: center; padding: var(--s-12) var(--s-6); }
+    .tick {
+      width: 82px; height: 82px; margin: 0 auto var(--s-4);
+      border-radius: 50%; background: var(--success-bg); color: var(--success);
+      display: grid; place-items: center; font-size: 40px;
+      animation: pop 400ms cubic-bezier(.2,1.4,.5,1);
+    }
+    @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+  </style>
+</head>
+<body>
+
+<div id="sv-header"></div>
+
+<main class="container-sv" style="padding-block:var(--s-6)">
+
+  <!-- Completed steps are clickable so you can go back and edit. -->
+  <div class="steps mb-5" id="steps">
+    <span class="step active" data-step="1"><span class="dot">1</span> Address</span>
+    <span class="step-line"></span>
+    <span class="step" data-step="2"><span class="dot">2</span> Payment</span>
+    <span class="step-line"></span>
+    <span class="step" data-step="3"><span class="dot">3</span> Review</span>
+  </div>
+
+  <div class="row g-4" id="wrap">
+    <div class="col-lg-8" id="stepBody"></div>
+    <div class="col-lg-4" id="summaryCol"></div>
+  </div>
+</main>
+
+<div id="sv-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/ui.js"></script>
+<script>
+(async function () {
+  UI.mountLayout();
+  if (!UI.requireAuth('customer')) return;
+
+  const body = document.getElementById('stepBody');
+  const summaryCol = document.getElementById('summaryCol');
+
+  let cart = null;
+  let addresses = [];
+  let step = 1;
+  let chosen = { address: null, paymentMode: 'UPI' };
+  let placedOrder = null;
+
+  /* Rough pincode -> city map so the estimate feels real without a real API. */
+  const PIN_CITY = {
+    56: { city: 'Bengaluru', state: 'Karnataka' },
+    60: { city: 'Chennai', state: 'Tamil Nadu' },
+    40: { city: 'Mumbai', state: 'Maharashtra' },
+    11: { city: 'New Delhi', state: 'Delhi' },
+    70: { city: 'Kolkata', state: 'West Bengal' },
+    38: { city: 'Ahmedabad', state: 'Gujarat' },
+    50: { city: 'Hyderabad', state: 'Telangana' },
+    41: { city: 'Pune', state: 'Maharashtra' },
+  };
+
+  /* -------------------------------- load --------------------------------- */
+  try {
+    const [cartRes, addrRes] = await Promise.all([
+      SV.api.cart.get(),
+      SV.api.auth.addresses(),
+    ]);
+    cart = cartRes.data;
+    addresses = addrRes.data || [];
+  } catch (err) {
+    body.innerHTML = UI.empty('bi-plug', 'Could not load checkout', err.message);
+    return;
+  }
+
+  if (!cart.items.length) {
+    document.getElementById('wrap').innerHTML = `<div class="col-12">${UI.empty(
+      'bi-cart-x', 'Your cart is empty',
+      'Add something to your cart before checking out.',
+      { href: 'products.html', label: 'Browse products' }
+    )}</div>`;
+    document.getElementById('steps').hidden = true;
+    return;
+  }
+
+  chosen.address = addresses.find((a) => a.isDefault) || addresses[0] || null;
+
+  /* ------------------------------- rendering ----------------------------- */
+
+  function paintSteps() {
+    document.querySelectorAll('#steps .step').forEach((el) => {
+      const n = Number(el.dataset.step);
+      el.classList.toggle('done', n < step);
+      el.classList.toggle('active', n === step);
+    });
+    document.querySelectorAll('#steps .step-line').forEach((el, i) => {
+      el.classList.toggle('done', i + 1 < step);
+    });
+  }
+
+  document.getElementById('steps').addEventListener('click', (e) => {
+    const el = e.target.closest('.step');
+    if (!el) return;
+    const n = Number(el.dataset.step);
+    if (n < step) { step = n; render(); } // only backwards
+  });
+
+  function renderSummary() {
+    const s = cart.summary;
+    summaryCol.innerHTML = `
+      <div class="sv-card sv-card-pad summary-sticky">
+        <h2 style="font-size:var(--t-md)" class="mb-3">Order Summary</h2>
+
+        ${cart.items.map((i) => `
+          <div class="d-flex gap-2 align-items-center mb-3">
+            <img src="${UI.esc(i.product.image)}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:var(--r-sm);background:var(--surface-2)">
+            <div class="flex-grow-1 min-w-0">
+              <div class="text-truncate" style="font-size:var(--t-xs);font-weight:600">${UI.esc(i.product.name)}</div>
+              <small class="dim">Qty ${i.quantity}</small>
+            </div>
+            <strong class="price" style="font-size:var(--t-sm)">${UI.money(i.subtotal)}</strong>
+          </div>`).join('')}
+
+        <hr>
+        <div class="sum-row"><span>Subtotal</span><span class="price">${UI.money(s.itemsTotal)}</span></div>
+        ${s.discount ? `<div class="sum-row"><span>Coupon (${UI.esc(cart.coupon?.code || '')})</span><span class="save price">− ${UI.money(s.discount)}</span></div>` : ''}
+        <div class="sum-row"><span>Delivery</span><span class="price">${s.deliveryCharge === 0 ? '<span class="save">FREE</span>' : UI.money(s.deliveryCharge)}</span></div>
+        <div class="sum-row total"><span>Total</span><span class="price">${UI.money(s.total)}</span></div>
+      </div>`;
+  }
+
+  /* ------------------------------- step 1 -------------------------------- */
+
+  function renderAddress() {
+    body.innerHTML = `
+      <div class="sv-card sv-card-pad">
+        <h2 style="font-size:var(--t-md)" class="mb-3">Shipping Address</h2>
+
+        ${addresses.length ? `
+          <div class="d-grid gap-3 mb-4">
+            ${addresses.map((a) => `
+              <label class="addr-card">
+                <div class="d-flex gap-3">
+                  <input type="radio" name="addr" value="${a._id}" ${chosen.address?._id === a._id ? 'checked' : ''}>
+                  <div>
+                    <strong style="font-size:var(--t-sm)">${UI.esc(a.fullName)}</strong>
+                    <span class="chip ms-1" style="padding:1px 8px;font-size:10px">${UI.esc(a.label || 'Home')}</span>
+                    <div class="muted" style="font-size:var(--t-sm)">
+                      ${UI.esc(a.line1)}${a.line2 ? ', ' + UI.esc(a.line2) : ''}<br>
+                      ${UI.esc(a.city)}${a.state ? ', ' + UI.esc(a.state) : ''} — ${UI.esc(a.pincode)}
+                    </div>
+                    <small class="dim">Phone: ${UI.esc(a.phone)}</small>
+                  </div>
+                </div>
+              </label>`).join('')}
+          </div>
+          <button class="btn-sv btn-ghost-sv mb-4" id="toggleNew"><i class="bi bi-plus-lg"></i> Add a new address</button>
+        ` : ''}
+
+        <form id="addrForm" ${addresses.length ? 'hidden' : ''}>
+          <div class="row g-3">
+            <div class="col-md-6 field mb-0">
+              <label for="fullName">Full name</label>
+              <input class="input" id="fullName" required value="${UI.esc(SV.getUser()?.name || '')}">
+            </div>
+            <div class="col-md-6 field mb-0">
+              <label for="phone">Phone number</label>
+              <input class="input" id="phone" required value="${UI.esc(SV.getUser()?.phone || '')}" placeholder="98765 43210">
+            </div>
+            <div class="col-12 field mb-0">
+              <label for="line1">Address line 1</label>
+              <input class="input" id="line1" required placeholder="House no., building, street">
+            </div>
+            <div class="col-12 field mb-0">
+              <label for="line2">Address line 2 <span class="dim fw-normal">(optional)</span></label>
+              <input class="input" id="line2" placeholder="Landmark, area">
+            </div>
+            <div class="col-md-4 field mb-0">
+              <label for="pincode">Pincode</label>
+              <input class="input" id="pincode" required maxlength="6" inputmode="numeric" placeholder="560001">
+              <span class="field-hint" id="pinHint"></span>
+            </div>
+            <div class="col-md-4 field mb-0">
+              <label for="city">City</label>
+              <input class="input" id="city" required>
+            </div>
+            <div class="col-md-4 field mb-0">
+              <label for="state">State</label>
+              <input class="input" id="state">
+            </div>
+          </div>
+          <label class="check mt-3">
+            <input type="checkbox" id="saveAddr" checked> Save this address for future orders
+          </label>
+        </form>
+
+        <button class="btn-sv btn-primary-sv mt-4" id="next1">
+          Continue to Payment <i class="bi bi-arrow-right"></i>
+        </button>
+      </div>`;
+
+    body.querySelectorAll('input[name="addr"]').forEach((r) =>
+      r.addEventListener('change', () => {
+        chosen.address = addresses.find((a) => a._id === r.value);
+      })
+    );
+
+    document.getElementById('toggleNew')?.addEventListener('click', () => {
+      const form = document.getElementById('addrForm');
+      form.hidden = !form.hidden;
+      if (!form.hidden) form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    // Pincode drives city/state and the delivery estimate.
+    const pin = document.getElementById('pincode');
+    pin.addEventListener('input', () => {
+      const v = pin.value.replace(/\D/g, '').slice(0, 6);
+      pin.value = v;
+      const hint = document.getElementById('pinHint');
+      if (v.length === 6) {
+        const match = PIN_CITY[v.slice(0, 2)];
+        if (match) {
+          document.getElementById('city').value = match.city;
+          document.getElementById('state').value = match.state;
+        }
+        const eta = new Date(Date.now() + 5 * 86400000);
+        hint.textContent = `Estimated delivery by ${UI.date(eta)}`;
+        hint.style.color = 'var(--success)';
+      } else {
+        hint.textContent = '';
+      }
+    });
+
+    document.getElementById('next1').addEventListener('click', async () => {
+      const form = document.getElementById('addrForm');
+
+      // Using a saved address and the new-address form is hidden -> just go on.
+      if (form.hidden && chosen.address) { step = 2; render(); return; }
+
+      const payload = {
+        fullName: document.getElementById('fullName').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        line1: document.getElementById('line1').value.trim(),
+        line2: document.getElementById('line2').value.trim(),
+        city: document.getElementById('city').value.trim(),
+        state: document.getElementById('state').value.trim(),
+        pincode: document.getElementById('pincode').value.trim(),
+      };
+
+      if (!payload.fullName || !payload.phone || !payload.line1 || !payload.city) {
+        UI.toast('Please fill in every required field.', 'warning');
+        return;
+      }
+      if (!/^\d{6}$/.test(payload.pincode)) {
+        UI.toast('Pincode must be exactly 6 digits.', 'warning');
+        return;
+      }
+
+      if (document.getElementById('saveAddr').checked) {
+        try {
+          const res = await SV.api.auth.addAddress(payload);
+          addresses = res.data;
+          chosen.address = addresses[addresses.length - 1];
+        } catch (err) {
+          UI.toastErr(err);
+          return;
+        }
+      } else {
+        chosen.address = payload;
+      }
+
+      step = 2;
+      render();
+    });
+  }
+
+  /* ------------------------------- step 2 -------------------------------- */
+
+  function renderPayment() {
+    body.innerHTML = `
+      <div class="sv-card sv-card-pad">
+        <h2 style="font-size:var(--t-md)" class="mb-3">Select Payment Method</h2>
+
+        <label class="pay-option">
+          <span class="pay-head">
+            <input type="radio" name="pay" value="UPI" ${chosen.paymentMode === 'UPI' ? 'checked' : ''}>
+            <i class="bi bi-phone" style="font-size:19px"></i>
+            <span>UPI <small class="dim fw-normal">(GPay, PhonePe, Paytm)</small></span>
+          </span>
+          <div class="expand">
+            <div class="field mb-0">
+              <label for="vpa">UPI ID</label>
+              <input class="input" id="vpa" placeholder="yourname@upi">
+              <span class="field-hint">You will be asked to approve the payment in your UPI app.</span>
+            </div>
+          </div>
+        </label>
+
+        <label class="pay-option">
+          <span class="pay-head">
+            <input type="radio" name="pay" value="Card" ${chosen.paymentMode === 'Card' ? 'checked' : ''}>
+            <i class="bi bi-credit-card" style="font-size:19px"></i>
+            <span>Credit / Debit Card</span>
+          </span>
+          <div class="expand">
+            <div class="row g-3">
+              <div class="col-12 field mb-0">
+                <label for="cardNo">Card number</label>
+                <input class="input" id="cardNo" placeholder="0000 0000 0000 0000" inputmode="numeric" maxlength="19">
+              </div>
+              <div class="col-6 field mb-0">
+                <label for="cardExp">Expiry</label>
+                <input class="input" id="cardExp" placeholder="MM/YY" maxlength="5">
+              </div>
+              <div class="col-6 field mb-0">
+                <label for="cardCvv">CVV</label>
+                <input class="input" id="cardCvv" placeholder="123" maxlength="4" inputmode="numeric">
+              </div>
+            </div>
+            <span class="field-hint">Mock gateway — no real card details are stored or sent.</span>
+          </div>
+        </label>
+
+        <label class="pay-option">
+          <span class="pay-head">
+            <input type="radio" name="pay" value="NetBanking" ${chosen.paymentMode === 'NetBanking' ? 'checked' : ''}>
+            <i class="bi bi-bank" style="font-size:19px"></i>
+            <span>Net Banking</span>
+          </span>
+          <div class="expand">
+            <div class="field mb-0">
+              <label for="bank">Select your bank</label>
+              <select class="select" id="bank">
+                <option>State Bank of India</option>
+                <option>HDFC Bank</option>
+                <option>ICICI Bank</option>
+                <option>Axis Bank</option>
+                <option>Kotak Mahindra Bank</option>
+              </select>
+            </div>
+          </div>
+        </label>
+
+        <label class="pay-option">
+          <span class="pay-head">
+            <input type="radio" name="pay" value="COD" ${chosen.paymentMode === 'COD' ? 'checked' : ''}>
+            <i class="bi bi-cash-coin" style="font-size:19px"></i>
+            <span>Cash on Delivery</span>
+          </span>
+          <div class="expand">
+            <span class="field-hint mt-0">Pay in cash when your order is handed to you. Payment is marked as received on delivery.</span>
+          </div>
+        </label>
+
+        <div class="d-flex gap-3 mt-4">
+          <button class="btn-sv btn-ghost-sv" id="back2"><i class="bi bi-arrow-left"></i> Back</button>
+          <button class="btn-sv btn-primary-sv flex-grow-1" id="next2">
+            Continue to Review <i class="bi bi-arrow-right"></i>
+          </button>
+        </div>
+
+        <p class="dim text-center mt-3 mb-0" style="font-size:var(--t-xs)">
+          <i class="bi bi-lock-fill"></i> Your payment information is secure and encrypted.
+        </p>
+      </div>`;
+
+    body.querySelectorAll('input[name="pay"]').forEach((r) =>
+      r.addEventListener('change', () => { chosen.paymentMode = r.value; })
+    );
+
+    // Light formatting so the mock card fields feel like real ones.
+    document.getElementById('cardNo')?.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
+    });
+    document.getElementById('cardExp')?.addEventListener('input', (e) => {
+      const v = e.target.value.replace(/\D/g, '').slice(0, 4);
+      e.target.value = v.length > 2 ? `${v.slice(0, 2)}/${v.slice(2)}` : v;
+    });
+
+    document.getElementById('back2').addEventListener('click', () => { step = 1; render(); });
+    document.getElementById('next2').addEventListener('click', () => { step = 3; render(); });
+  }
+
+  /* ------------------------------- step 3 -------------------------------- */
+
+  function renderReview() {
+    const a = chosen.address;
+    body.innerHTML = `
+      <div class="sv-card sv-card-pad">
+        <h2 style="font-size:var(--t-md)" class="mb-3">Review your order</h2>
+
+        <div class="row g-4">
+          <div class="col-md-6">
+            <small class="dim d-block mb-1">DELIVER TO</small>
+            <strong style="font-size:var(--t-sm)">${UI.esc(a.fullName)}</strong>
+            <div class="muted" style="font-size:var(--t-sm)">
+              ${UI.esc(a.line1)}${a.line2 ? ', ' + UI.esc(a.line2) : ''}<br>
+              ${UI.esc(a.city)}${a.state ? ', ' + UI.esc(a.state) : ''} — ${UI.esc(a.pincode)}<br>
+              Phone: ${UI.esc(a.phone)}
+            </div>
+            <button class="btn-sv btn-ghost-sv mt-2" data-goto="1" style="padding:4px 10px;font-size:var(--t-xs)">Change</button>
+          </div>
+          <div class="col-md-6">
+            <small class="dim d-block mb-1">PAYMENT METHOD</small>
+            <strong style="font-size:var(--t-sm)">${UI.esc(chosen.paymentMode)}</strong>
+            <div class="muted" style="font-size:var(--t-sm)">
+              ${chosen.paymentMode === 'COD' ? 'Pay in cash on delivery.' : 'You will be charged after confirming.'}
+            </div>
+            <button class="btn-sv btn-ghost-sv mt-2" data-goto="2" style="padding:4px 10px;font-size:var(--t-xs)">Change</button>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <small class="dim d-block mb-2">ITEMS (${cart.summary.itemCount})</small>
+        ${cart.items.map((i) => `
+          <div class="d-flex gap-3 align-items-center mb-3">
+            <img src="${UI.esc(i.product.image)}" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:var(--r-sm);background:var(--surface-2)">
+            <div class="flex-grow-1 min-w-0">
+              <div class="text-truncate fw-semibold" style="font-size:var(--t-sm)">${UI.esc(i.product.name)}</div>
+              <small class="dim">${UI.money(i.product.price)} × ${i.quantity}</small>
+            </div>
+            <strong class="price">${UI.money(i.subtotal)}</strong>
+          </div>`).join('')}
+
+        <div class="d-flex gap-3 mt-4">
+          <button class="btn-sv btn-ghost-sv" id="back3"><i class="bi bi-arrow-left"></i> Back</button>
+          <button class="btn-sv btn-primary-sv flex-grow-1" id="placeBtn">
+            <i class="bi bi-shield-check"></i> Place Order · ${UI.money(cart.summary.total)}
+          </button>
+        </div>
+      </div>`;
+
+    body.querySelectorAll('[data-goto]').forEach((btn) =>
+      btn.addEventListener('click', () => { step = Number(btn.dataset.goto); render(); })
+    );
+    document.getElementById('back3').addEventListener('click', () => { step = 2; render(); });
+    document.getElementById('placeBtn').addEventListener('click', placeOrder);
+  }
+
+  /* ---------------------------- place + pay ------------------------------ */
+
+  async function placeOrder() {
+    const btn = document.getElementById('placeBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Placing order…';
+
+    const a = chosen.address;
+    try {
+      const res = await SV.api.orders.create({
+        shippingAddress: {
+          fullName: a.fullName,
+          phone: a.phone,
+          line1: a.line1,
+          line2: a.line2 || '',
+          city: a.city,
+          state: a.state || '',
+          pincode: a.pincode,
+        },
+        paymentMode: chosen.paymentMode,
+        couponCode: cart.coupon?.code,
+      });
+
+      placedOrder = res.data;
+      UI.refreshCartCount();
+
+      if (chosen.paymentMode === 'COD') {
+        showSuccess('Order placed. Pay in cash when it arrives.');
+      } else {
+        await runPayment();
+      }
+    } catch (err) {
+      UI.toastErr(err);
+      btn.disabled = false;
+      btn.innerHTML = `<i class="bi bi-shield-check"></i> Place Order · ${UI.money(cart.summary.total)}`;
+    }
+  }
+
+  /** The mock gateway, made visible: initiate -> spinner -> verify -> tick. */
+  async function runPayment() {
+    document.getElementById('steps').hidden = true;
+    summaryCol.innerHTML = '';
+    body.className = 'col-12';
+    body.innerHTML = `
+      <div class="sv-card pay-processing">
+        <div class="spinner-border mb-4" style="width:56px;height:56px;color:var(--brand-700)" role="status">
+          <span class="visually-hidden">Processing</span>
+        </div>
+        <h2 style="font-size:var(--t-lg)">Processing your payment…</h2>
+        <p class="muted" id="payStep">Contacting the payment gateway</p>
+        <small class="dim"><i class="bi bi-lock-fill"></i> Do not refresh or close this page.</small>
+      </div>`;
+
+    const stepText = document.getElementById('payStep');
+
+    try {
+      const init = await SV.api.payments.initiate(placedOrder._id);
+      stepText.textContent = `Authorising ${UI.money(init.data.amount)} via ${init.data.paymentMode}`;
+
+      await new Promise((r) => setTimeout(r, 1400));
+      stepText.textContent = 'Confirming with your bank';
+
+      const verified = await SV.api.payments.verify(placedOrder._id, init.data.reference);
+      await new Promise((r) => setTimeout(r, 500));
+
+      showSuccess(`Payment of ${UI.money(placedOrder.totalAmount)} received.`, verified.data.reference);
+    } catch (err) {
+      body.innerHTML = `
+        <div class="sv-card pay-processing">
+          <div class="tick" style="background:var(--danger-bg);color:var(--danger)">
+            <i class="bi bi-x-lg"></i>
+          </div>
+          <h2 style="font-size:var(--t-lg)">Payment failed</h2>
+          <p class="muted">${UI.esc(err.message)}</p>
+          <p class="muted">Your order <strong>${UI.esc(placedOrder.orderNumber)}</strong> was created and is awaiting payment.</p>
+          <div class="d-flex gap-3 justify-content-center mt-4">
+            <a href="orders.html" class="btn-sv btn-ghost-sv">View my orders</a>
+            <button class="btn-sv btn-primary-sv" id="retryPay">Retry payment</button>
+          </div>
+        </div>`;
+      document.getElementById('retryPay').addEventListener('click', runPayment);
+    }
+  }
+
+  function showSuccess(message, reference) {
+    document.getElementById('steps').hidden = true;
+    summaryCol.innerHTML = '';
+    body.className = 'col-12';
+    body.innerHTML = `
+      <div class="sv-card pay-processing">
+        <div class="tick"><i class="bi bi-check-lg"></i></div>
+        <h2 style="font-size:var(--t-xl)">Order confirmed</h2>
+        <p class="muted">${UI.esc(message)}</p>
+
+        <div class="d-inline-block text-start sv-card sv-card-pad mt-3" style="min-width:min(420px,100%)">
+          <div class="sum-row"><span>Order number</span><strong>${UI.esc(placedOrder.orderNumber)}</strong></div>
+          <div class="sum-row"><span>Amount</span><strong class="price">${UI.money(placedOrder.totalAmount)}</strong></div>
+          <div class="sum-row"><span>Payment</span><strong>${UI.esc(placedOrder.paymentMode)}</strong></div>
+          ${reference ? `<div class="sum-row"><span>Reference</span><strong>${UI.esc(reference)}</strong></div>` : ''}
+          <div class="sum-row"><span>Expected delivery</span><strong>${UI.date(placedOrder.expectedDeliveryAt)}</strong></div>
+        </div>
+
+        <div class="d-flex gap-3 justify-content-center mt-4 flex-wrap">
+          <a href="order.html?id=${placedOrder._id}" class="btn-sv btn-primary-sv">
+            <i class="bi bi-truck"></i> Track order
+          </a>
+          <a href="products.html" class="btn-sv btn-ghost-sv">Continue shopping</a>
+        </div>
+      </div>`;
+  }
+
+  /* -------------------------------- driver ------------------------------- */
+
+  function render() {
+    paintSteps();
+    renderSummary();
+    if (step === 1) renderAddress();
+    else if (step === 2) renderPayment();
+    else renderReview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

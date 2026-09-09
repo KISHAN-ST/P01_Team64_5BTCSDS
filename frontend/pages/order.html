@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Tracking — ShopVerse</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/tokens.css" rel="stylesheet">
+  <link href="../assets/css/main.css" rel="stylesheet">
+  <style>
+    @media print {
+      .sv-header, .sv-footer, .no-print { display: none !important; }
+      body { background: #fff; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="sv-header"></div>
+
+<main class="container-sv" style="padding-block:var(--s-6)">
+  <div id="page"></div>
+</main>
+
+<div id="sv-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/ui.js"></script>
+<script>
+(async function () {
+  UI.mountLayout();
+  if (!UI.requireAuth()) return;
+
+  const id = UI.qs('id');
+  const page = document.getElementById('page');
+
+  if (!id) {
+    page.innerHTML = UI.empty('bi-question-circle', 'No order selected', 'Pick an order to track.',
+      { href: 'orders.html', label: 'My orders' });
+    return;
+  }
+
+  page.innerHTML = '<div class="sv-card sv-card-pad"><div class="sk sk-text" style="height:200px"></div></div>';
+
+  let order, tracking;
+  try {
+    const [o, t] = await Promise.all([SV.api.orders.one(id), SV.api.orders.track(id)]);
+    order = o.data;
+    tracking = t.data;
+  } catch (err) {
+    page.innerHTML = UI.empty('bi-exclamation-triangle', 'Could not load this order', err.message,
+      { href: 'orders.html', label: 'Back to my orders' });
+    return;
+  }
+
+  const canCancel =
+    ['Placed', 'Confirmed'].includes(order.status) && SV.role() === 'customer';
+
+  const STAGE_NOTE = {
+    Placed: 'Your order has been placed successfully.',
+    Confirmed: 'Seller has confirmed your order.',
+    Shipped: 'Your order is on the way.',
+    Delivered: 'Your order has been delivered.',
+  };
+
+  page.innerHTML = `
+    <nav aria-label="breadcrumb" class="mb-3 no-print">
+      <ol class="breadcrumb mb-0" style="font-size:var(--t-sm)">
+        <li class="breadcrumb-item"><a href="../index.html">Home</a></li>
+        <li class="breadcrumb-item"><a href="orders.html">My Orders</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#${UI.esc(order.orderNumber)}</li>
+      </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+      <div>
+        <h1 style="font-size:var(--t-xl);margin:0">Order #${UI.esc(order.orderNumber)}</h1>
+        <p class="muted mb-0" style="font-size:var(--t-sm)">Placed on ${UI.date(order.createdAt, true)}</p>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-sv btn-ghost-sv" id="invoiceBtn"><i class="bi bi-download"></i> Invoice</button>
+        ${canCancel ? '<button class="btn-sv btn-ghost-sv" id="cancelBtn" style="color:var(--danger)"><i class="bi bi-x-circle"></i> Cancel order</button>' : ''}
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- timeline -->
+      <div class="col-lg-7">
+        <div class="sv-card sv-card-pad">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 style="font-size:var(--t-md);margin:0">Order status</h2>
+            <span class="status status-${UI.esc(order.status)}">${UI.esc(order.status)}</span>
+          </div>
+
+          ${tracking.isCancelled ? `
+            <div class="p-3 mb-4" style="background:var(--danger-bg);border-radius:var(--r-sm);color:var(--danger)">
+              <strong><i class="bi bi-x-circle"></i> This order was cancelled</strong>
+              <div style="font-size:var(--t-sm)">${UI.esc(order.cancelReason || '')} · ${UI.date(order.cancelledAt, true)}</div>
+              ${order.paymentStatus === 'Refunded' ? '<div style="font-size:var(--t-sm)">A refund has been initiated.</div>' : ''}
+            </div>` : ''}
+
+          <div class="timeline">
+            <div class="fill" id="tlFill"></div>
+            ${tracking.timeline.map((t) => `
+              <div class="tl-item ${t.done ? 'done' : ''}">
+                <span class="node"><i class="bi bi-check-lg"></i></span>
+                <strong>${UI.esc(t.status)}</strong>
+                <small class="d-block">${t.at ? UI.date(t.at, true) : 'Pending'}</small>
+                <small class="dim">${UI.esc(t.note || STAGE_NOTE[t.status] || '')}</small>
+              </div>`).join('')}
+          </div>
+
+          ${!tracking.isCancelled && order.status !== 'Delivered' ? `
+            <div class="mt-4 p-3" style="background:var(--brand-50);border-radius:var(--r-sm)">
+              <i class="bi bi-truck text-brand"></i>
+              <strong style="font-size:var(--t-sm)">Estimated delivery: ${UI.date(tracking.expectedDeliveryAt)}</strong>
+            </div>` : ''}
+        </div>
+
+        <div class="sv-card sv-card-pad mt-3">
+          <h2 style="font-size:var(--t-md)" class="mb-3">Need help?</h2>
+          <p class="muted" style="font-size:var(--t-sm)">
+            Questions about this order? Our support team is available 9am–9pm, every day.
+          </p>
+          <button class="btn-sv btn-outline-sv no-print" id="supportBtn">
+            <i class="bi bi-headset"></i> Contact support
+          </button>
+        </div>
+      </div>
+
+      <!-- items + totals -->
+      <div class="col-lg-5">
+        <div class="sv-card sv-card-pad">
+          <h2 style="font-size:var(--t-md)" class="mb-3">Items (${order.items.length})</h2>
+          ${order.items.map((i) => `
+            <div class="d-flex gap-3 align-items-center mb-3">
+              <img src="${UI.esc(i.image)}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:var(--r-sm);background:var(--surface-2)">
+              <div class="flex-grow-1 min-w-0">
+                <a href="product.html?id=${i.product?._id || i.product}" class="d-block text-truncate fw-semibold"
+                   style="font-size:var(--t-sm);color:var(--ink-900)">${UI.esc(i.name)}</a>
+                <small class="dim">${UI.money(i.price)} × ${i.quantity}</small>
+              </div>
+              <strong class="price">${UI.money(i.subtotal)}</strong>
+            </div>`).join('')}
+
+          <hr>
+          <div class="sum-row"><span>Items total</span><span class="price">${UI.money(order.itemsTotal)}</span></div>
+          ${order.discount ? `<div class="sum-row"><span>Coupon ${UI.esc(order.coupon?.code || '')}</span><span class="save price">− ${UI.money(order.discount)}</span></div>` : ''}
+          <div class="sum-row"><span>Delivery</span><span class="price">${order.deliveryCharge === 0 ? '<span class="save">FREE</span>' : UI.money(order.deliveryCharge)}</span></div>
+          <div class="sum-row total"><span>Total paid</span><span class="price">${UI.money(order.totalAmount)}</span></div>
+
+          <div class="sum-row mt-3"><span>Payment mode</span><strong>${UI.esc(order.paymentMode)}</strong></div>
+          <div class="sum-row"><span>Payment status</span><span class="status status-${UI.esc(order.paymentStatus)}">${UI.esc(order.paymentStatus)}</span></div>
+        </div>
+
+        <div class="sv-card sv-card-pad mt-3">
+          <h2 style="font-size:var(--t-md)" class="mb-3">Delivery address</h2>
+          <strong style="font-size:var(--t-sm)">${UI.esc(order.shippingAddress.fullName)}</strong>
+          <p class="muted mb-0" style="font-size:var(--t-sm)">
+            ${UI.esc(order.shippingAddress.line1)}${order.shippingAddress.line2 ? ', ' + UI.esc(order.shippingAddress.line2) : ''}<br>
+            ${UI.esc(order.shippingAddress.city)}${order.shippingAddress.state ? ', ' + UI.esc(order.shippingAddress.state) : ''} — ${UI.esc(order.shippingAddress.pincode)}<br>
+            Phone: ${UI.esc(order.shippingAddress.phone)}
+          </p>
+        </div>
+      </div>
+    </div>`;
+
+  // Fill the progress line to the last completed node.
+  const doneCount = tracking.timeline.filter((t) => t.done).length;
+  const fillPct = tracking.isCancelled
+    ? 0
+    : Math.max(0, ((doneCount - 1) / (tracking.timeline.length - 1)) * 100);
+  requestAnimationFrame(() => {
+    const fill = document.getElementById('tlFill');
+    const track = document.querySelector('.timeline');
+    if (fill && track) fill.style.height = `${(fillPct / 100) * (track.clientHeight - 16)}px`;
+  });
+
+  document.getElementById('cancelBtn')?.addEventListener('click', async () => {
+    if (!confirm('Cancel this order? Stock will be returned to the seller.')) return;
+    try {
+      await SV.api.orders.cancel(order._id, 'Cancelled by customer.');
+      UI.toastOk('Order cancelled and stock restored.');
+      setTimeout(() => location.reload(), 700);
+    } catch (err) { UI.toastErr(err); }
+  });
+
+  document.getElementById('invoiceBtn')?.addEventListener('click', () => window.print());
+
+  document.getElementById('supportBtn')?.addEventListener('click', () =>
+    UI.toast('Support ticketing is out of scope for this project.', 'info')
+  );
+})();
+</script>
+</body>
+</html>

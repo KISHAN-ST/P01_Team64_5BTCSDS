@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product — ShopVerse</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/tokens.css" rel="stylesheet">
+  <link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body>
+
+<div id="sv-header"></div>
+
+<main class="container-sv" style="padding-block:var(--s-6)">
+  <div id="page"></div>
+</main>
+
+<!-- Sticky buy bar, mobile only -->
+<div class="buybar" id="buybar" hidden>
+  <button class="btn-sv btn-outline-sv" id="mobAdd">Add to Cart</button>
+  <button class="btn-sv btn-primary-sv" id="mobBuy">Buy Now</button>
+</div>
+
+<div id="sv-footer"></div>
+
+<!-- Write-a-review modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:var(--r-lg)">
+      <div class="modal-header border-0">
+        <h5 class="modal-title">Write a review</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="reviewForm">
+          <div class="field">
+            <label>Your rating</label>
+            <div class="star-pick" id="starPick" role="radiogroup" aria-label="Rating">
+              <button type="button" data-star="1" aria-label="1 star"><i class="bi bi-star-fill"></i></button>
+              <button type="button" data-star="2" aria-label="2 stars"><i class="bi bi-star-fill"></i></button>
+              <button type="button" data-star="3" aria-label="3 stars"><i class="bi bi-star-fill"></i></button>
+              <button type="button" data-star="4" aria-label="4 stars"><i class="bi bi-star-fill"></i></button>
+              <button type="button" data-star="5" aria-label="5 stars"><i class="bi bi-star-fill"></i></button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="rvTitle">Title <span class="dim fw-normal">(optional)</span></label>
+            <input class="input" id="rvTitle" maxlength="100" placeholder="Sum up your experience">
+          </div>
+          <div class="field">
+            <label for="rvComment">Your review</label>
+            <textarea class="textarea" id="rvComment" rows="4" maxlength="1000" required
+                      placeholder="What did you like or dislike? How did you use it?"></textarea>
+            <span class="field-hint"><span id="charCount">0</span>/1000 characters</span>
+          </div>
+          <button class="btn-sv btn-primary-sv btn-block" type="submit" id="rvSubmit">Submit review</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/ui.js"></script>
+<script>
+(async function () {
+  UI.mountLayout();
+
+  const id = UI.qs('id');
+  const page = document.getElementById('page');
+
+  if (!id) {
+    page.innerHTML = UI.empty('bi-question-circle', 'No product selected',
+      'Pick a product from the catalog.', { href: 'products.html', label: 'Browse products' });
+    return;
+  }
+
+  page.innerHTML = `
+    <div class="row g-5">
+      <div class="col-lg-5"><div class="sk" style="aspect-ratio:1;border-radius:var(--r-md)"></div></div>
+      <div class="col-lg-7">
+        <div class="sk sk-text" style="width:75%;height:26px"></div>
+        <div class="sk sk-text" style="width:35%"></div>
+        <div class="sk sk-text" style="width:50%;height:30px;margin-top:24px"></div>
+        <div class="sk sk-text" style="width:90%"></div>
+        <div class="sk sk-text" style="width:80%"></div>
+      </div>
+    </div>`;
+
+  let product;
+  try {
+    const res = await SV.api.products.one(id);
+    product = res.data;
+  } catch (err) {
+    page.innerHTML = UI.empty('bi-exclamation-triangle', 'Product not found', err.message,
+      { href: 'products.html', label: 'Back to products' });
+    return;
+  }
+
+  const off = product.mrp > product.price
+    ? Math.round(((product.mrp - product.price) / product.mrp) * 100) : 0;
+  const out = product.stock === 0;
+  const low = product.stock > 0 && product.stock <= 5;
+
+  page.innerHTML = `
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb mb-0" style="font-size:var(--t-sm)">
+        <li class="breadcrumb-item"><a href="../index.html">Home</a></li>
+        <li class="breadcrumb-item"><a href="products.html?category=${product.category?._id || ''}">${UI.esc(product.category?.name || 'Products')}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">${UI.esc(product.name)}</li>
+      </ol>
+    </nav>
+
+    <div class="row g-5">
+      <!-- gallery -->
+      <div class="col-lg-5">
+        <div class="gallery-main" id="galleryMain">
+          <img src="${UI.esc(product.images[0])}" alt="${UI.esc(product.name)}" id="mainImg">
+        </div>
+        <div class="gallery-rail">
+          ${product.images.map((src, i) => `
+            <button class="${i === 0 ? 'active' : ''}" data-img="${UI.esc(src)}" aria-label="View image ${i + 1}">
+              <img src="${UI.esc(src)}" alt="">
+            </button>`).join('')}
+        </div>
+      </div>
+
+      <!-- summary -->
+      <div class="col-lg-7">
+        <h1 style="font-size:var(--t-2xl)">${UI.esc(product.name)}</h1>
+
+        <div class="d-flex flex-wrap align-items-center gap-3 mt-2 mb-3">
+          <span class="d-flex align-items-center gap-1">
+            ${UI.stars(product.ratingAverage)}
+            <strong style="font-size:var(--t-sm)">${product.ratingAverage || 0}</strong>
+            <a href="#reviews" class="muted" style="font-size:var(--t-sm)">(${product.ratingCount || 0} reviews)</a>
+          </span>
+          <span class="chip"><i class="bi bi-shop"></i> ${UI.esc(product.seller?.sellerProfile?.shopName || product.seller?.name || 'ShopVerse')}</span>
+        </div>
+
+        <div class="d-flex align-items-baseline gap-3 mb-2">
+          <span class="price" style="font-size:var(--t-2xl);font-weight:800">${UI.money(product.price)}</span>
+          ${off ? `<span class="dim text-decoration-line-through price">${UI.money(product.mrp)}</span>
+                   <span class="chip" style="background:var(--danger-bg);color:var(--danger);border-color:var(--danger)">${off}% OFF</span>` : ''}
+        </div>
+        <p class="dim" style="font-size:var(--t-xs)">Inclusive of all taxes</p>
+
+        <p class="muted">${UI.esc(product.description.slice(0, 180))}${product.description.length > 180 ? '…' : ''}</p>
+
+        <div class="mb-3">
+          ${out
+            ? '<span class="status status-Cancelled"><i class="bi bi-x-circle"></i> Out of Stock</span>'
+            : low
+            ? `<span class="status status-Shipped"><i class="bi bi-exclamation-triangle"></i> Hurry — only ${product.stock} left</span>`
+            : '<span class="status status-Delivered"><i class="bi bi-check-circle"></i> In Stock</span>'}
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+          <div class="qty">
+            <button type="button" id="qMinus" aria-label="Decrease quantity">−</button>
+            <span class="val" id="qVal">1</span>
+            <button type="button" id="qPlus" aria-label="Increase quantity">+</button>
+          </div>
+          <button class="btn-sv btn-outline-sv" id="addBtn" ${out ? 'disabled' : ''}>
+            <i class="bi bi-cart-plus"></i> Add to Cart
+          </button>
+          <button class="btn-sv btn-primary-sv" id="buyBtn" ${out ? 'disabled' : ''}>
+            <i class="bi bi-lightning-charge"></i> Buy Now
+          </button>
+        </div>
+        <p class="dim" style="font-size:var(--t-xs)" id="qtyNote"></p>
+
+        <div class="row g-3">
+          <div class="col-6 col-md-4"><div class="trust"><i class="bi bi-truck"></i><div><strong>Free delivery</strong><span>On orders above ₹500</span></div></div></div>
+          <div class="col-6 col-md-4"><div class="trust"><i class="bi bi-arrow-repeat"></i><div><strong>7-day returns</strong><span>No questions asked</span></div></div></div>
+          <div class="col-6 col-md-4"><div class="trust"><i class="bi bi-shield-check"></i><div><strong>1-year warranty</strong><span>Manufacturer backed</span></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- tabs -->
+    <section class="mt-5" id="reviews">
+      <div class="tabs" role="tablist">
+        <button class="active" data-tab="desc" role="tab">Description</button>
+        <button data-tab="specs" role="tab">Specifications</button>
+        <button data-tab="revs" role="tab">Reviews (${product.ratingCount || 0})</button>
+      </div>
+
+      <div data-panel="desc">
+        <p style="max-width:78ch">${UI.esc(product.description)}</p>
+      </div>
+
+      <div data-panel="specs" hidden>
+        <div class="table-scroll" style="max-width:640px">
+          <table class="tbl">
+            <tbody>
+              ${(product.specifications || []).map((s) => `
+                <tr><td style="width:200px"><strong>${UI.esc(s.key)}</strong></td><td>${UI.esc(s.value)}</td></tr>`).join('')}
+              <tr><td><strong>Brand</strong></td><td>${UI.esc(product.brand)}</td></tr>
+              <tr><td><strong>SKU</strong></td><td>${UI.esc(product.sku || '-')}</td></tr>
+              <tr><td><strong>Category</strong></td><td>${UI.esc(product.category?.name || '-')}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div data-panel="revs" hidden>
+        <div class="row g-4">
+          <div class="col-lg-4">
+            <div class="sv-card sv-card-pad text-center">
+              <div style="font-size:var(--t-3xl);font-weight:800;line-height:1" class="num">${product.ratingAverage || 0}</div>
+              ${UI.stars(product.ratingAverage)}
+              <p class="muted mt-2 mb-3" style="font-size:var(--t-sm)">Based on ${product.ratingCount || 0} reviews</p>
+              <div id="histogram"></div>
+              <button class="btn-sv btn-primary-sv btn-block mt-3" id="writeBtn">
+                <i class="bi bi-pencil"></i> Write a Review
+              </button>
+              <span class="field-hint" id="writeHint"></span>
+            </div>
+          </div>
+          <div class="col-lg-8">
+            <div class="d-flex flex-wrap gap-2 mb-3" id="reviewFilters">
+              <button class="chip chip-brand" data-rf="">All Reviews</button>
+              <button class="chip" data-rf="photos">With Photos</button>
+              <button class="chip" data-rf="5">5 ★</button>
+              <button class="chip" data-rf="4">4 ★</button>
+              <button class="chip" data-rf="latest">Latest</button>
+            </div>
+            <div id="reviewList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- related -->
+    ${product.related?.length ? `
+    <section class="mt-5">
+      <h2 style="font-size:var(--t-xl)" class="mb-4">You may also like</h2>
+      <div class="row g-3 g-md-4" id="related">
+        ${product.related.map((p) => `<div class="col-6 col-md-3">${UI.productCard(p)}</div>`).join('')}
+      </div>
+    </section>` : ''}
+  `;
+
+  /* --------------------------- gallery + zoom ---------------------------- */
+  const mainImg = document.getElementById('mainImg');
+  document.querySelectorAll('.gallery-rail button').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.gallery-rail button').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      mainImg.src = btn.dataset.img;
+    })
+  );
+
+  const galleryMain = document.getElementById('galleryMain');
+  galleryMain.addEventListener('mousemove', (e) => {
+    const rect = galleryMain.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    mainImg.style.transformOrigin = `${x}% ${y}%`;
+    mainImg.style.transform = 'scale(1.9)';
+  });
+  galleryMain.addEventListener('mouseleave', () => {
+    mainImg.style.transform = 'scale(1)';
+  });
+
+  /* ------------------------------ quantity ------------------------------- */
+  let qty = 1;
+  const maxQty = Math.min(product.stock, 10);
+  const qVal = document.getElementById('qVal');
+  const qPlus = document.getElementById('qPlus');
+  const qMinus = document.getElementById('qMinus');
+  const note = document.getElementById('qtyNote');
+
+  function paintQty() {
+    qVal.textContent = qty;
+    qMinus.disabled = qty <= 1;
+    qPlus.disabled = qty >= maxQty;
+    note.textContent = out
+      ? ''
+      : qty >= maxQty
+      ? product.stock <= 10
+        ? `Only ${product.stock} unit(s) available.`
+        : 'Maximum 10 units per order.'
+      : '';
+  }
+  qPlus.addEventListener('click', () => { if (qty < maxQty) { qty += 1; paintQty(); } });
+  qMinus.addEventListener('click', () => { if (qty > 1) { qty -= 1; paintQty(); } });
+  paintQty();
+
+  /* -------------------------------- tabs --------------------------------- */
+  document.querySelectorAll('.tabs button').forEach((tab) =>
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tabs button').forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('[data-panel]').forEach((p) => {
+        p.hidden = p.dataset.panel !== tab.dataset.tab;
+      });
+    })
+  );
+
+  /* ------------------------------ cart actions --------------------------- */
+  async function addToCart(then) {
+    if (!SV.isLoggedIn()) {
+      SV.store.set('sv_redirect', location.pathname + location.search);
+      UI.toast('Please log in to shop.', 'info');
+      setTimeout(() => (location.href = 'login.html'), 800);
+      return;
+    }
+    if (SV.role() !== 'customer') {
+      UI.toast('Only customer accounts can shop.', 'warning');
+      return;
+    }
+    try {
+      await SV.api.cart.add(product._id, qty);
+      UI.toastOk(`${qty} × ${product.name} added to cart.`);
+      UI.refreshCartCount();
+      if (then) then();
+    } catch (err) {
+      UI.toastErr(err);
+    }
+  }
+
+  document.getElementById('addBtn').addEventListener('click', () => addToCart());
+  document.getElementById('buyBtn').addEventListener('click', () =>
+    addToCart(() => setTimeout(() => (location.href = 'cart.html'), 500))
+  );
+
+  const buybar = document.getElementById('buybar');
+  buybar.hidden = false;
+  document.getElementById('mobAdd').addEventListener('click', () => addToCart());
+  document.getElementById('mobBuy').addEventListener('click', () =>
+    addToCart(() => setTimeout(() => (location.href = 'cart.html'), 500))
+  );
+  if (out) {
+    document.getElementById('mobAdd').disabled = true;
+    document.getElementById('mobBuy').disabled = true;
+  }
+
+  /* -------------------------------- reviews ------------------------------ */
+  const reviewList = document.getElementById('reviewList');
+
+  async function loadReviews(filter = '') {
+    reviewList.innerHTML = '<div class="sk sk-text" style="height:70px"></div>';
+    const query = {};
+    if (filter === 'photos') query.withPhotos = 'true';
+    else if (filter === 'latest') query.sort = 'newest';
+    else if (filter) query.rating = filter;
+
+    try {
+      const res = await SV.api.products.reviews(product._id, query);
+      const { data: reviews, meta } = res;
+
+      document.getElementById('histogram').innerHTML = (meta.breakdown || [])
+        .map(
+          (b) => `
+          <div class="hist-row">
+            <span>${b.stars} <i class="bi bi-star-fill" style="color:var(--accent-amber);font-size:10px"></i></span>
+            <span class="hist-bar"><span style="width:${b.percent}%"></span></span>
+            <span class="dim num">${b.percent}%</span>
+          </div>`
+        )
+        .join('');
+
+      reviewList.innerHTML = reviews.length
+        ? reviews
+            .map(
+              (r) => `
+          <article class="sv-card sv-card-pad mb-3">
+            <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <span class="d-grid" style="width:38px;height:38px;border-radius:var(--r-full);background:var(--brand-50);color:var(--brand-700);place-items:center;font-weight:700">
+                  ${UI.esc((r.user?.name || 'U')[0].toUpperCase())}
+                </span>
+                <div>
+                  <strong style="font-size:var(--t-sm)">${UI.esc(r.user?.name || 'Customer')}</strong>
+                  ${r.isVerifiedPurchase ? '<span class="chip chip-brand ms-1" style="padding:1px 7px;font-size:10px"><i class="bi bi-patch-check-fill"></i> Verified</span>' : ''}
+                  <div>${UI.stars(r.rating)}</div>
+                </div>
+              </div>
+              <small class="dim">${UI.date(r.createdAt)}</small>
+            </div>
+            ${r.title ? `<strong style="font-size:var(--t-sm)">${UI.esc(r.title)}</strong>` : ''}
+            <p class="muted mb-2" style="font-size:var(--t-sm)">${UI.esc(r.comment)}</p>
+            <button class="chip" data-helpful="${r._id}">
+              <i class="bi bi-hand-thumbs-up"></i> Helpful (${r.helpfulCount || 0})
+            </button>
+          </article>`
+            )
+            .join('')
+        : UI.empty('bi-chat-square-text', 'No reviews yet', 'Be the first to share your experience.');
+
+      reviewList.querySelectorAll('[data-helpful]').forEach((btn) =>
+        btn.addEventListener('click', async () => {
+          if (!SV.isLoggedIn()) { UI.toast('Log in to mark reviews helpful.', 'info'); return; }
+          try {
+            const r = await SV.api.reviews.helpful(btn.dataset.helpful);
+            btn.innerHTML = `<i class="bi bi-hand-thumbs-up-fill"></i> Helpful (${r.data.helpfulCount})`;
+            btn.disabled = true;
+          } catch (err) { UI.toastErr(err); }
+        })
+      );
+    } catch (err) {
+      reviewList.innerHTML = UI.empty('bi-plug', 'Could not load reviews', err.message);
+    }
+  }
+
+  document.querySelectorAll('#reviewFilters [data-rf]').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#reviewFilters [data-rf]').forEach((b) => {
+        b.classList.remove('chip-brand');
+      });
+      btn.classList.add('chip-brand');
+      loadReviews(btn.dataset.rf);
+    })
+  );
+
+  loadReviews();
+
+  /* --------------------- write review: gated by the rule ----------------- */
+  const writeBtn = document.getElementById('writeBtn');
+  const writeHint = document.getElementById('writeHint');
+
+  if (!SV.isLoggedIn()) {
+    writeBtn.disabled = true;
+    writeHint.textContent = 'Log in to write a review.';
+  } else if (SV.role() !== 'customer') {
+    writeBtn.disabled = true;
+    writeHint.textContent = 'Only customers can review products.';
+  } else if (!product.canReview) {
+    writeBtn.disabled = true;
+    writeBtn.title = 'Available after delivery';
+    writeHint.textContent = 'You can review this product once your order for it has been delivered.';
+  }
+
+  let chosenRating = 0;
+  const modalEl = document.getElementById('reviewModal');
+  const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
+
+  writeBtn.addEventListener('click', () => modal?.show());
+
+  document.querySelectorAll('#starPick button').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      chosenRating = Number(btn.dataset.star);
+      document.querySelectorAll('#starPick button').forEach((b) =>
+        b.classList.toggle('on', Number(b.dataset.star) <= chosenRating)
+      );
+    })
+  );
+
+  const comment = document.getElementById('rvComment');
+  comment.addEventListener('input', () => {
+    document.getElementById('charCount').textContent = comment.value.length;
+  });
+
+  document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!chosenRating) { UI.toast('Please select a star rating.', 'warning'); return; }
+    if (comment.value.trim().length < 5) { UI.toast('Please write at least 5 characters.', 'warning'); return; }
+
+    const btn = document.getElementById('rvSubmit');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting…';
+
+    try {
+      await SV.api.products.addReview(product._id, {
+        rating: chosenRating,
+        title: document.getElementById('rvTitle').value.trim(),
+        comment: comment.value.trim(),
+      });
+      UI.toastOk('Review submitted. Thank you!');
+      modal?.hide();
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      UI.toastErr(err);
+      btn.disabled = false;
+      btn.textContent = 'Submit review';
+    }
+  });
+
+  const related = document.getElementById('related');
+  if (related) UI.wireProductGrid(related);
+})();
+</script>
+</body>
+</html>

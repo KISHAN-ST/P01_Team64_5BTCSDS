@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart — ShopVerse</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/tokens.css" rel="stylesheet">
+  <link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body>
+
+<div id="sv-header"></div>
+
+<main class="container-sv" style="padding-block:var(--s-6)">
+  <h1 style="font-size:var(--t-xl)" class="mb-4">
+    Shopping Cart <span class="muted fw-normal" id="itemCount"></span>
+  </h1>
+
+  <div class="row g-4" id="layout">
+    <div class="col-lg-8" id="itemsCol">
+      <div class="sv-card sv-card-pad"><div class="sk sk-text" style="height:90px"></div></div>
+    </div>
+    <div class="col-lg-4" id="summaryCol"></div>
+  </div>
+</main>
+
+<div id="sv-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/ui.js"></script>
+<script>
+(async function () {
+  UI.mountLayout();
+  if (!UI.requireAuth('customer')) return;
+
+  const itemsCol = document.getElementById('itemsCol');
+  const summaryCol = document.getElementById('summaryCol');
+  let cart = null;
+
+  /** Holds the last removed line so the undo toast can put it back. */
+  let lastRemoved = null;
+
+  async function load() {
+    try {
+      const res = await SV.api.cart.get();
+      cart = res.data;
+      render();
+      UI.refreshCartCount();
+    } catch (err) {
+      itemsCol.innerHTML = UI.empty('bi-plug', 'Could not load your cart', err.message);
+      summaryCol.innerHTML = '';
+    }
+  }
+
+  function render() {
+    document.getElementById('itemCount').textContent =
+      cart.items.length ? `(${cart.summary.itemCount} item${cart.summary.itemCount > 1 ? 's' : ''})` : '';
+
+    if (!cart.items.length) {
+      document.getElementById('layout').innerHTML = `
+        <div class="col-12">
+          ${UI.empty('bi-cart-x', 'Your cart is empty',
+            'Looks like you have not added anything yet.',
+            { href: 'products.html', label: 'Continue shopping' })}
+        </div>`;
+      return;
+    }
+
+    /* ------------------------------ items -------------------------------- */
+    itemsCol.innerHTML = cart.items
+      .map(
+        (item) => `
+      <div class="sv-card sv-card-pad mb-3" data-row="${item._id}">
+        <div class="d-flex gap-3 flex-wrap flex-sm-nowrap">
+          <a href="product.html?id=${item.product._id}" style="flex-shrink:0">
+            <img src="${UI.esc(item.product.image)}" alt="${UI.esc(item.product.name)}"
+                 style="width:92px;height:92px;object-fit:cover;border-radius:var(--r-sm);background:var(--surface-2)">
+          </a>
+
+          <div class="flex-grow-1 min-w-0">
+            <a href="product.html?id=${item.product._id}" class="fw-semibold d-block"
+               style="font-size:var(--t-sm);color:var(--ink-900)">${UI.esc(item.product.name)}</a>
+            <small class="dim d-block">Sold by ${UI.esc(item.product.seller?.sellerProfile?.shopName || item.product.seller?.name || 'ShopVerse')}</small>
+
+            <div class="d-flex align-items-baseline gap-2 mt-1">
+              <strong class="price">${UI.money(item.product.price)}</strong>
+              ${item.product.mrp > item.product.price
+                ? `<small class="dim text-decoration-line-through price">${UI.money(item.product.mrp)}</small>` : ''}
+            </div>
+
+            ${item.exceedsStock
+              ? `<div class="stock-out mt-1"><i class="bi bi-exclamation-triangle"></i> Only ${item.product.stock} left — quantity reduced</div>` : ''}
+            ${item.priceChanged && !item.exceedsStock
+              ? '<div class="stock-warn mt-1"><i class="bi bi-info-circle"></i> Price changed since you added this</div>' : ''}
+
+            <div class="d-flex align-items-center gap-3 mt-3 flex-wrap">
+              <div class="qty">
+                <button type="button" data-dec="${item._id}" aria-label="Decrease quantity" ${item.quantity <= 1 ? 'disabled' : ''}>−</button>
+                <span class="val">${item.quantity}</span>
+                <button type="button" data-inc="${item._id}" aria-label="Increase quantity"
+                        ${item.quantity >= Math.min(item.product.stock, 10) ? 'disabled' : ''}
+                        title="${item.quantity >= item.product.stock ? 'No more stock available' : ''}">+</button>
+              </div>
+              <button class="btn-sv btn-ghost-sv" data-save="${item._id}" style="padding:6px 12px;font-size:var(--t-xs)">
+                <i class="bi bi-bookmark"></i> Save for later
+              </button>
+              <button class="btn-sv btn-ghost-sv" data-del="${item._id}" style="padding:6px 12px;font-size:var(--t-xs);color:var(--danger)">
+                <i class="bi bi-trash"></i> Remove
+              </button>
+            </div>
+            ${item.quantity >= item.product.stock && item.product.stock <= 10
+              ? `<small class="stock-warn d-block mt-2">Maximum available: ${item.product.stock}</small>` : ''}
+          </div>
+
+          <div class="text-end" style="min-width:96px">
+            <small class="dim d-block">Subtotal</small>
+            <strong class="price" style="font-size:var(--t-md)">${UI.money(item.subtotal)}</strong>
+          </div>
+        </div>
+      </div>`
+      )
+      .join('');
+
+    /* ----------------------------- summary ------------------------------- */
+    const s = cart.summary;
+    const savings = cart.items.reduce(
+      (acc, i) => acc + Math.max(0, (i.product.mrp - i.product.price) * i.quantity), 0
+    );
+
+    summaryCol.innerHTML = `
+      <div class="sv-card sv-card-pad summary-sticky">
+        <h2 style="font-size:var(--t-md)" class="mb-3">Order Summary</h2>
+
+        <div class="sum-row"><span>Subtotal (${s.itemCount} items)</span><span class="price">${UI.money(s.itemsTotal)}</span></div>
+        ${savings > 0 ? `<div class="sum-row"><span>Discount on MRP</span><span class="save price">− ${UI.money(savings)}</span></div>` : ''}
+        ${s.discount > 0 ? `<div class="sum-row"><span>Coupon (${UI.esc(cart.coupon?.code || '')})</span><span class="save price">− ${UI.money(s.discount)}</span></div>` : ''}
+        <div class="sum-row">
+          <span>Delivery</span>
+          <span class="price">${s.deliveryCharge === 0 ? '<span class="save">FREE</span>' : UI.money(s.deliveryCharge)}</span>
+        </div>
+        ${s.deliveryCharge > 0
+          ? `<small class="dim d-block">Add ${UI.money(s.freeDeliveryAbove - (s.itemsTotal - s.discount))} more for free delivery</small>` : ''}
+
+        <div class="sum-row total"><span>Total</span><span class="price">${UI.money(s.total)}</span></div>
+
+        <button class="btn-sv btn-primary-sv btn-block mt-3" id="checkoutBtn">
+          Proceed to Checkout <i class="bi bi-arrow-right"></i>
+        </button>
+
+        <hr class="my-4">
+
+        <label class="fw-semibold d-block mb-2" style="font-size:var(--t-sm)">Have a coupon code?</label>
+        ${cart.coupon
+          ? `<div class="d-flex align-items-center justify-content-between p-3" style="background:var(--success-bg);border-radius:var(--r-sm)">
+               <div>
+                 <strong style="font-size:var(--t-sm);color:var(--success)">${UI.esc(cart.coupon.code)}</strong>
+                 <div style="font-size:var(--t-xs);color:var(--success)">You saved ${UI.money(cart.coupon.discount)}</div>
+               </div>
+               <button class="btn-sv btn-ghost-sv" id="removeCoupon" style="padding:4px 10px;font-size:var(--t-xs)">Remove</button>
+             </div>`
+          : `<form class="d-flex gap-2" id="couponForm">
+               <input class="input" id="couponCode" placeholder="Enter code" style="text-transform:uppercase" aria-label="Coupon code">
+               <button class="btn-sv btn-outline-sv" type="submit" style="white-space:nowrap">Apply</button>
+             </form>
+             <div class="d-flex flex-wrap gap-1 mt-2" id="couponHints"></div>`}
+      </div>`;
+
+    wireSummary();
+    wireItems();
+    loadCouponHints();
+  }
+
+  /* ------------------------------ interactions --------------------------- */
+
+  function wireItems() {
+    itemsCol.querySelectorAll('[data-inc]').forEach((btn) =>
+      btn.addEventListener('click', () => changeQty(btn.dataset.inc, +1, btn))
+    );
+    itemsCol.querySelectorAll('[data-dec]').forEach((btn) =>
+      btn.addEventListener('click', () => changeQty(btn.dataset.dec, -1, btn))
+    );
+    itemsCol.querySelectorAll('[data-del]').forEach((btn) =>
+      btn.addEventListener('click', () => removeItem(btn.dataset.del))
+    );
+    itemsCol.querySelectorAll('[data-save]').forEach((btn) =>
+      btn.addEventListener('click', () =>
+        UI.toast('Saved for later. (Wishlist is stored on this device.)', 'info')
+      )
+    );
+  }
+
+  async function changeQty(itemId, delta, btn) {
+    const item = cart.items.find((i) => i._id === itemId);
+    if (!item) return;
+
+    const next = item.quantity + delta;
+    if (next < 1) return;
+
+    btn.disabled = true;
+    try {
+      const res = await SV.api.cart.update(itemId, next);
+      cart = res.data;
+      render();
+      UI.refreshCartCount();
+    } catch (err) {
+      UI.toastErr(err);
+      btn.disabled = false;
+    }
+  }
+
+  async function removeItem(itemId) {
+    const item = cart.items.find((i) => i._id === itemId);
+    if (!item) return;
+
+    lastRemoved = { productId: item.product._id, quantity: item.quantity, name: item.product.name };
+
+    try {
+      const res = await SV.api.cart.remove(itemId);
+      cart = res.data;
+      render();
+      UI.refreshCartCount();
+
+      UI.toast(`${lastRemoved.name} removed.`, 'info', {
+        duration: 6000,
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            try {
+              await SV.api.cart.add(lastRemoved.productId, lastRemoved.quantity);
+              UI.toastOk('Item restored.');
+              load();
+            } catch (err) { UI.toastErr(err); }
+          },
+        },
+      });
+    } catch (err) {
+      UI.toastErr(err);
+    }
+  }
+
+  function wireSummary() {
+    document.getElementById('checkoutBtn')?.addEventListener('click', () => {
+      const blocked = cart.items.some((i) => i.exceedsStock);
+      if (blocked) {
+        UI.toast('Some items exceed available stock. Adjust quantities first.', 'warning');
+        return;
+      }
+      location.href = 'checkout.html';
+    });
+
+    document.getElementById('couponForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const code = document.getElementById('couponCode').value.trim().toUpperCase();
+      if (!code) return;
+
+      const btn = e.target.querySelector('button');
+      btn.disabled = true;
+      btn.textContent = '…';
+      try {
+        const res = await SV.api.coupons.apply(code);
+        cart = res.data;
+        UI.toastOk(res.message);
+        render();
+      } catch (err) {
+        // The API returns the precise reason (expired, minimum not met, ...).
+        UI.toastErr(err);
+        btn.disabled = false;
+        btn.textContent = 'Apply';
+      }
+    });
+
+    document.getElementById('removeCoupon')?.addEventListener('click', async () => {
+      try {
+        const res = await SV.api.coupons.remove();
+        cart = res.data;
+        UI.toast('Coupon removed.', 'info');
+        render();
+      } catch (err) { UI.toastErr(err); }
+    });
+  }
+
+  /** Shows the live coupon codes so a demo does not depend on memory. */
+  async function loadCouponHints() {
+    const host = document.getElementById('couponHints');
+    if (!host) return;
+    try {
+      const { data } = await SV.api.coupons.list();
+      host.innerHTML =
+        '<small class="dim w-100">Try:</small>' +
+        data
+          .slice(0, 4)
+          .map((c) => `<button class="chip" type="button" data-code="${UI.esc(c.code)}">${UI.esc(c.code)}</button>`)
+          .join('');
+      host.querySelectorAll('[data-code]').forEach((btn) =>
+        btn.addEventListener('click', () => {
+          document.getElementById('couponCode').value = btn.dataset.code;
+        })
+      );
+    } catch (_) { /* hints are a convenience, not a requirement */ }
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>

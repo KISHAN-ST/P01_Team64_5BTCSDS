@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create account — ShopVerse</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/tokens.css" rel="stylesheet">
+  <link href="../assets/css/main.css" rel="stylesheet">
+  <style>
+    .auth-split { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; }
+    .auth-form-side { display: grid; place-items: center; padding: var(--s-8); }
+    .auth-brand-side {
+      background: linear-gradient(150deg, var(--brand-900), var(--brand-700) 60%, var(--brand-500));
+      color: #fff; display: grid; place-items: center; padding: var(--s-12);
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .auth-brand-side::after {
+      content: ""; position: absolute; inset: auto auto -30% -20%;
+      width: 420px; height: 420px; border-radius: 50%; background: rgba(255,255,255,.06);
+    }
+    .auth-brand-side .inner { position: relative; z-index: 1; max-width: 34ch; }
+    .auth-brand-side h2 { color: #fff; font-size: var(--t-2xl); margin: var(--s-4) 0 var(--s-3); }
+    .auth-brand-side p { color: rgba(255,255,255,.78); font-size: var(--t-sm); }
+    .auth-box { width: min(460px, 100%); }
+    @media (max-width: 900px) { .auth-split { grid-template-columns: 1fr; } .auth-brand-side { display: none; } }
+  </style>
+</head>
+<body>
+
+<div class="auth-split">
+  <div class="auth-form-side">
+    <div class="auth-box">
+      <a href="../index.html" class="sv-logo mb-4 d-inline-flex" style="color:var(--brand-700)!important">
+        <i class="bi bi-bag-heart-fill"></i> ShopVerse
+      </a>
+
+      <h1 style="font-size:var(--t-2xl)">Create your account</h1>
+      <p class="muted mb-4" style="font-size:var(--t-sm)">It takes less than a minute.</p>
+
+      <form id="regForm" novalidate>
+        <!-- Role as two large cards. Admin is never self-registerable. -->
+        <div class="field">
+          <label>I want to</label>
+          <div class="role-cards">
+            <label class="role-card">
+              <input type="radio" name="role" value="customer" checked>
+              <i class="bi bi-bag-heart"></i>
+              <strong style="font-size:var(--t-sm)">Shop</strong>
+              <div class="dim" style="font-size:var(--t-xs)">Buy products</div>
+            </label>
+            <label class="role-card">
+              <input type="radio" name="role" value="seller">
+              <i class="bi bi-shop"></i>
+              <strong style="font-size:var(--t-sm)">Sell</strong>
+              <div class="dim" style="font-size:var(--t-xs)">List my products</div>
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="name">Full name</label>
+          <input class="input" type="text" id="name" name="name" placeholder="Priya Sharma" autocomplete="name" required>
+          <span class="field-error" id="err-name" hidden></span>
+        </div>
+
+        <div class="field" id="shopField" hidden>
+          <label for="shopName">Shop name</label>
+          <input class="input" type="text" id="shopName" name="shopName" placeholder="e.g. TechWorld">
+          <span class="field-hint">Shown to customers on your product pages.</span>
+        </div>
+
+        <div class="field">
+          <label for="email">Email address</label>
+          <input class="input" type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" required>
+          <span class="field-error" id="err-email" hidden></span>
+        </div>
+
+        <div class="field">
+          <label for="phone">Phone number <span class="dim fw-normal">(optional)</span></label>
+          <input class="input" type="tel" id="phone" name="phone" placeholder="98765 43210" autocomplete="tel">
+          <span class="field-error" id="err-phone" hidden></span>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="pw-wrap">
+            <input class="input" type="password" id="password" name="password"
+                   placeholder="At least 6 characters, including a number" autocomplete="new-password" required>
+            <button class="pw-toggle" type="button" id="pwToggle" aria-label="Show password">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+          <div class="pw-meter"><span id="pwBar"></span></div>
+          <span class="field-hint" id="pwHint">Use 8+ characters with a number and a symbol for a strong password.</span>
+          <span class="field-error" id="err-password" hidden></span>
+        </div>
+
+        <label class="check mb-4">
+          <input type="checkbox" id="terms" checked>
+          <span>I agree to the Terms of Service and Privacy Policy</span>
+        </label>
+
+        <button class="btn-sv btn-primary-sv btn-block" type="submit" id="submitBtn">Create account</button>
+
+        <p class="text-center muted mt-4 mb-0" style="font-size:var(--t-sm)">
+          Already have an account? <a href="login.html" class="fw-semibold">Log in</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <aside class="auth-brand-side">
+    <div class="inner">
+      <i class="bi bi-stars" style="font-size:44px"></i>
+      <h2>Join ShopVerse<br>Today</h2>
+      <p>Shop from verified sellers, or open your own store and start selling in minutes.</p>
+    </div>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/ui.js"></script>
+<script>
+(function () {
+  if (SV.isLoggedIn()) { location.replace('../index.html'); return; }
+
+  const form = document.getElementById('regForm');
+  const btn = document.getElementById('submitBtn');
+  const shopField = document.getElementById('shopField');
+
+  // ?role=seller from the footer link preselects the seller card.
+  if (UI.qs('role') === 'seller') {
+    form.querySelector('input[value="seller"]').checked = true;
+  }
+
+  const syncRole = () => {
+    shopField.hidden = form.role.value !== 'seller';
+  };
+  form.querySelectorAll('input[name="role"]').forEach((r) =>
+    r.addEventListener('change', syncRole)
+  );
+  syncRole();
+
+  document.getElementById('pwToggle').addEventListener('click', (e) => {
+    const input = document.getElementById('password');
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    e.currentTarget.innerHTML = `<i class="bi bi-eye${show ? '-slash' : ''}"></i>`;
+  });
+
+  /* ---- password strength meter ---- */
+  const bar = document.getElementById('pwBar');
+  const hint = document.getElementById('pwHint');
+  const LEVELS = [
+    { w: '25%', c: 'var(--danger)', t: 'Weak password' },
+    { w: '50%', c: 'var(--warning)', t: 'Fair password' },
+    { w: '75%', c: 'var(--accent-amber)', t: 'Good password' },
+    { w: '100%', c: 'var(--success)', t: 'Strong password' },
+  ];
+
+  form.password.addEventListener('input', () => {
+    const v = form.password.value;
+    let score = 0;
+    if (v.length >= 6) score += 1;
+    if (v.length >= 10) score += 1;
+    if (/\d/.test(v) && /[a-zA-Z]/.test(v)) score += 1;
+    if (/[^a-zA-Z0-9]/.test(v)) score += 1;
+
+    if (!v) {
+      bar.style.width = '0';
+      hint.textContent = 'Use 8+ characters with a number and a symbol for a strong password.';
+      return;
+    }
+    const level = LEVELS[Math.max(0, score - 1)];
+    bar.style.width = level.w;
+    bar.style.background = level.c;
+    hint.textContent = level.t;
+  });
+
+  const showError = (field, message) => {
+    const el = document.getElementById(`err-${field}`);
+    const input = document.getElementById(field);
+    if (!el) return;
+    if (message) { el.textContent = message; el.hidden = false; input.classList.add('is-invalid'); }
+    else { el.hidden = true; input.classList.remove('is-invalid'); }
+  };
+
+  const validators = {
+    name: (v) => (v.trim().length >= 2 ? '' : 'Name must be at least 2 characters'),
+    email: (v) => (/^\S+@\S+\.\S+$/.test(v) ? '' : 'Enter a valid email address'),
+    phone: (v) => (!v || /^[\d\s+-]{6,15}$/.test(v) ? '' : 'Enter a valid phone number'),
+    password: (v) =>
+      v.length < 6
+        ? 'Password must be at least 6 characters'
+        : !/\d/.test(v)
+        ? 'Password must contain at least one number'
+        : '',
+  };
+
+  Object.keys(validators).forEach((field) => {
+    form[field].addEventListener('blur', () =>
+      showError(field, validators[field](form[field].value))
+    );
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    let bad = false;
+    Object.keys(validators).forEach((field) => {
+      const msg = validators[field](form[field].value);
+      showError(field, msg);
+      if (msg) bad = true;
+    });
+
+    if (!document.getElementById('terms').checked) {
+      UI.toast('Please accept the terms to continue.', 'warning');
+      bad = true;
+    }
+    if (bad) return;
+
+    const payload = {
+      name: form.name.value.trim(),
+      email: form.email.value.trim(),
+      password: form.password.value,
+      phone: form.phone.value.trim(),
+      role: form.role.value,
+    };
+    if (payload.role === 'seller') payload.shopName = form.shopName.value.trim();
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creating account…';
+
+    try {
+      const res = await SV.api.auth.register(payload);
+      SV.setSession(res.data.token, res.data.user);
+      UI.toastOk('Account created. Welcome to ShopVerse!');
+      setTimeout(() => {
+        location.href = res.data.user.role === 'seller' ? 'seller.html' : '../index.html';
+      }, 600);
+    } catch (err) {
+      UI.toastErr(err);
+      // Surface field-level messages returned by express-validator.
+      (err.errors || []).forEach((fieldError) =>
+        showError(fieldError.field, fieldError.message)
+      );
+      if (err.status === 409) showError('email', 'This email is already registered');
+      btn.disabled = false;
+      btn.textContent = 'Create account';
+    }
+  });
+})();
+</script>
+</body>
+</html>

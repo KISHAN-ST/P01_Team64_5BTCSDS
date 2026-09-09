@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopVerse — Shop Smarter, Live Better</title>
+  <meta name="description" content="Discover quality products from trusted sellers. Shop smart, live better.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="assets/css/tokens.css" rel="stylesheet">
+  <link href="assets/css/main.css" rel="stylesheet">
+</head>
+<body>
+
+<div id="sv-header"></div>
+
+<!-- ============================ HERO ============================ -->
+<section class="hero">
+  <div class="container-sv">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6 fade-up">
+        <span class="chip chip-brand mb-3"><i class="bi bi-stars"></i> Trusted by 1,200+ shoppers</span>
+        <h1>Good Products<br>Brighter Days</h1>
+        <p>Discover quality products from trusted sellers across electronics, fashion, home and more. Shop smart, live better.</p>
+        <div class="d-flex flex-wrap gap-3">
+          <a href="pages/products.html" class="btn-sv btn-primary-sv">
+            <i class="bi bi-bag"></i> Shop Now
+          </a>
+          <a href="pages/products.html?sort=popular" class="btn-sv btn-outline-sv">
+            Browse best sellers
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-6 fade-up">
+        <div class="hero-collage" id="heroCollage"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= CATEGORIES ========================= -->
+<section class="container-sv" style="margin-top:var(--s-12)">
+  <div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+      <h2 style="font-size:var(--t-xl)">Shop by category</h2>
+      <p class="muted mb-0" style="font-size:var(--t-sm)">Everything you need, neatly organised.</p>
+    </div>
+    <a href="pages/products.html" class="fw-semibold" style="font-size:var(--t-sm)">
+      View all <i class="bi bi-arrow-right"></i>
+    </a>
+  </div>
+  <div class="row g-3 g-md-4 justify-content-center" id="categoryRow">
+    <div class="col-12 text-center muted py-4">
+      <span class="spinner-border spinner-border-sm"></span> Loading categories…
+    </div>
+  </div>
+</section>
+
+<!-- =========================== DEALS ============================ -->
+<section class="container-sv" style="margin-top:var(--s-16)">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <h2 style="font-size:var(--t-xl)">
+        <i class="bi bi-lightning-charge-fill" style="color:var(--accent-amber)"></i>
+        Deals of the Day
+      </h2>
+      <p class="muted mb-0" style="font-size:var(--t-sm)">Biggest discounts, refreshed daily.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="muted" style="font-size:var(--t-sm)">Ends in</span>
+      <div class="countdown" id="countdown" role="timer" aria-live="off">
+        <b>00</b><b>00</b><b>00</b>
+      </div>
+    </div>
+  </div>
+  <div class="scroller" id="dealsRow"></div>
+</section>
+
+<!-- ======================== FEATURED GRID ======================= -->
+<section class="container-sv" style="margin-top:var(--s-16)">
+  <div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+      <h2 style="font-size:var(--t-xl)">Featured products</h2>
+      <p class="muted mb-0" style="font-size:var(--t-sm)">Hand-picked from our top-rated sellers.</p>
+    </div>
+    <a href="pages/products.html" class="fw-semibold" style="font-size:var(--t-sm)">
+      See all <i class="bi bi-arrow-right"></i>
+    </a>
+  </div>
+  <div class="row g-3 g-md-4" id="featuredGrid"></div>
+</section>
+
+<!-- ========================== TRUST BAR ========================= -->
+<!-- Placed above the footer, not under the category row, so it does not
+     compete with the primary navigation. -->
+<section class="container-sv" style="margin-top:var(--s-16)">
+  <div class="sv-card sv-card-pad">
+    <div class="row g-4">
+      <div class="col-6 col-lg-3">
+        <div class="trust">
+          <i class="bi bi-shield-check"></i>
+          <div><strong>Secure Payments</strong><span>Shop with confidence</span></div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="trust">
+          <i class="bi bi-arrow-repeat"></i>
+          <div><strong>Easy Returns</strong><span>Hassle-free returns</span></div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="trust">
+          <i class="bi bi-patch-check"></i>
+          <div><strong>Trusted Sellers</strong><span>Quality guaranteed</span></div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="trust">
+          <i class="bi bi-truck"></i>
+          <div><strong>Fast Delivery</strong><span>At your doorstep</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="sv-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+(async function () {
+  UI.mountLayout();
+
+  const featured = document.getElementById('featuredGrid');
+  const deals = document.getElementById('dealsRow');
+  featured.innerHTML = UI.skeletonCards(8);
+
+  UI.wireProductGrid(featured);
+  UI.wireProductGrid(deals);
+
+  /* ---- categories ---- */
+  try {
+    const { data: tree } = await SV.api.categories.tree();
+    document.getElementById('categoryRow').innerHTML = tree
+      .slice(0, 8)
+      .map(
+        (c) => `
+        <div class="col-3 col-md-2" style="max-width:132px">
+          <a class="cat-tile" href="pages/products.html?category=${c._id}">
+            <span class="circle"><i class="bi ${UI.esc(c.icon || 'bi-tag')}"></i></span>
+            <span>${UI.esc(c.name)}</span>
+          </a>
+        </div>`
+      )
+      .join('');
+  } catch (err) {
+    document.getElementById('categoryRow').innerHTML =
+      `<div class="col-12">${UI.empty('bi-wifi-off', 'Cannot load categories', err.message)}</div>`;
+  }
+
+  /* ---- featured + hero collage ---- */
+  try {
+    const { data: products } = await SV.api.products.list({ sort: 'featured', limit: 8 });
+
+    featured.innerHTML = products.length
+      ? products.map((p) => `<div class="col-6 col-md-4 col-lg-3">${UI.productCard(p)}</div>`).join('')
+      : `<div class="col-12">${UI.empty('bi-box', 'No products yet', 'Run "npm run seed" in the backend folder to load demo data.')}</div>`;
+
+    document.getElementById('heroCollage').innerHTML = products
+      .slice(0, 4)
+      .map((p) => `<img src="${UI.esc(p.images?.[0] || '')}" alt="${UI.esc(p.name)}">`)
+      .join('');
+  } catch (err) {
+    featured.innerHTML = `<div class="col-12">${UI.empty(
+      'bi-plug', 'Cannot reach the API', err.message
+    )}</div>`;
+  }
+
+  /* ---- deals: the steepest discounts currently live ---- */
+  try {
+    const { data } = await SV.api.products.list({ limit: 40, inStock: true });
+    const withDiscount = data
+      .map((p) => ({ ...p, off: p.mrp > p.price ? (p.mrp - p.price) / p.mrp : 0 }))
+      .sort((a, b) => b.off - a.off)
+      .slice(0, 8);
+    deals.innerHTML = withDiscount.map((p) => UI.productCard(p)).join('');
+  } catch (_) {
+    deals.innerHTML = '';
+  }
+
+  /* ---- countdown to midnight ---- */
+  const cd = document.getElementById('countdown');
+  const tick = () => {
+    const now = new Date();
+    const end = new Date(now);
+    end.setHours(24, 0, 0, 0);
+    let s = Math.max(0, Math.floor((end - now) / 1000));
+    const h = String(Math.floor(s / 3600)).padStart(2, '0');
+    const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+    const sec = String(s % 60).padStart(2, '0');
+    cd.innerHTML = `<b>${h}</b><b>${m}</b><b>${sec}</b>`;
+  };
+  tick();
+  setInterval(tick, 1000);
+
+  UI.revealOnScroll();
+})();
+</script>
+</body>
+</html>
