@@ -1,11 +1,15 @@
 /* ==========================================================================
    ShopVerse - components. Consumes tokens.css only.
    ========================================================================== */
-
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 * { box-sizing: border-box; }
 
+/* ==========================================================================
+   TYPOGRAPHY — Modern editorial / DAA-style
+   ========================================================================== */
+
 body {
-  font-family: var(--font-body);
+  font-family: "Manrope", sans-serif;
   background: var(--canvas);
   color: var(--ink-900);
   font-size: var(--t-md);
@@ -13,14 +17,43 @@ body {
   margin: 0;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6, .font-head {
-  font-family: var(--font-head);
-  font-weight: 700;
-  line-height: 1.2;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-head {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  line-height: 1.08;
   color: var(--ink-900);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.045em;
+}
+
+h1 {
+  font-weight: 800;
+  letter-spacing: -0.055em;
+}
+
+h2 {
+  letter-spacing: -0.045em;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: -0.035em;
+}
+
+.sv-logo {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.045em;
 }
 
 a { color: var(--brand-500); text-decoration: none; transition: color var(--transition); }
